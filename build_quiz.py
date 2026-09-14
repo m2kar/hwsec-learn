@@ -79,20 +79,22 @@ main { max-width:760px; margin:20px auto; padding:0 16px; }
     <span>答对 <b id="stCorrect">0</b></span>
     <span>正确率 <b id="stRate">–</b></span>
     <span>模拟得分 <b id="stScore">0</b> 分</span>
+    <span>已刷 <b id="stSeen">0</b>/<b id="stTotal">126</b> 题</span>
     <span>错题本 <b id="stWrong">0</b></span>
     <button id="themeBtn" title="切换深色 / 浅色（默认跟随系统）">☾ 深色</button>
   </div>
 </header>
 <div id="controls">
   <select id="mode">
+    <option value="rand" selected>随机刷题（优先新题）</option>
     <option value="seq">顺序刷题</option>
-    <option value="rand">随机刷题</option>
     <option value="wrong">错题重刷</option>
   </select>
   <select id="domain"><option value="">全部知识域</option></select>
   <select id="qtype"><option value="">全部题型</option><option>单选</option><option>多选</option></select>
   <select id="diff"><option value="">全部难度</option><option>基础</option><option>进阶</option><option>挑战</option></select>
   <button id="startBtn" class="primary">开始 / 重置</button>
+  <button id="clearSeen" class="ghost">清空刷题记录</button>
   <button id="clearWrong" class="ghost">清空错题本</button>
 </div>
 <main>
@@ -115,8 +117,10 @@ main { max-width:760px; margin:20px auto; padding:0 16px; }
 <script>
 const QUESTIONS = __DATA__;
 const KEY_WRONG = "hwsec_wrong_v1";
+const KEY_SEEN = "hwsec_seen_v1";
 const $ = id => document.getElementById(id);
 let wrongBook = new Set(JSON.parse(localStorage.getItem(KEY_WRONG) || "[]"));
+let seen = new Set(JSON.parse(localStorage.getItem(KEY_SEEN) || "[]"));
 let queue = [], idx = 0, picked = new Set(), submitted = false;
 let stats = { answered: 0, correct: 0, score: 0 };
 let mode = "seq";
@@ -124,6 +128,11 @@ let mode = "seq";
 function saveWrong() {
   localStorage.setItem(KEY_WRONG, JSON.stringify([...wrongBook]));
   $("stWrong").textContent = wrongBook.size;
+}
+function saveSeen() {
+  localStorage.setItem(KEY_SEEN, JSON.stringify([...seen]));
+  $("stSeen").textContent = seen.size;
+  $("stTotal").textContent = QUESTIONS.length;
 }
 function renderStats() {
   $("stAnswered").textContent = stats.answered;
@@ -137,7 +146,12 @@ function buildPool() {
   let pool = QUESTIONS.filter(q =>
     (!domain || q.domain === domain) && (!qtype || q.type === qtype) && (!diff || q.diff === diff));
   if (mode === "wrong") pool = pool.filter(q => wrongBook.has(q.id));
-  if (mode === "rand") shuffle(pool);
+  if (mode === "rand") {
+    shuffle(pool);
+    const fresh = pool.filter(q => !seen.has(q.id));
+    const done = pool.filter(q => seen.has(q.id));
+    pool = fresh.concat(done);
+  }
   return pool;
 }
 function start() {
@@ -201,6 +215,7 @@ function submit() {
   const ansSet = new Set(q.ans.split(""));
   const isRight = picked.size === ansSet.size && [...picked].every(x => ansSet.has(x));
   stats.answered++;
+  seen.add(q.id); saveSeen();
   if (isRight) {
     stats.correct++;
     stats.score += q.type === "单选" ? 2 : 3;
@@ -245,6 +260,9 @@ $("startBtn").onclick = start;
 $("clearWrong").onclick = () => {
   if (wrongBook.size && confirm("确定清空全部错题记录？")) { wrongBook.clear(); saveWrong(); }
 };
+$("clearSeen").onclick = () => {
+  if (seen.size && confirm("确定清空刷题记录？之后随机模式将重新优先推送所有题目。")) { seen.clear(); saveSeen(); }
+};
 function effectiveTheme() {
   return document.documentElement.dataset.theme ||
     (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
@@ -265,7 +283,7 @@ window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", upd
   const domains = [...new Set(QUESTIONS.map(q => q.domain))].sort();
   const sel = $("domain");
   domains.forEach(d => { const o = document.createElement("option"); o.textContent = d; sel.appendChild(o); });
-  saveWrong(); start(); updateThemeBtn();
+  saveWrong(); saveSeen(); start(); updateThemeBtn();
 })();
 </script>
 </body>
