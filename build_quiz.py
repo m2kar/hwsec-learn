@@ -3,7 +3,7 @@
 import csv, json, html
 
 CSV = "硬件安全题库.csv"
-OUT = "index.html"
+OUT = "quiz/index.html"
 
 questions = []
 with open(CSV, encoding="utf-8-sig") as f:
