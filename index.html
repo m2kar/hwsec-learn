@@ -4,24 +4,28 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>硬件安全学习中心</title>
+<script>(function(){var t=null;try{t=localStorage.getItem("theme")}catch(e){}if(!t)t=window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";document.documentElement.dataset.theme=t;})();</script>
 <style>
-:root { --accent:#C7000B; --blue:#1F4E79; }
+:root { --accent:#C7000B; --accentT:#C7000B; --blue:#1F4E79; --bg:#f7f5f2; --card:#fff; --text:#222; --muted:#666; --line:#e3e0dc; color-scheme:light; }
+:root[data-theme="dark"] { --accent:#e5483d; --accentT:#ff6b60; --blue:#8ab8e8; --bg:#14161a; --card:#1d2026; --text:#d6d3cd; --muted:#9a968f; --line:#34383f; color-scheme:dark; }
 * { box-sizing:border-box; }
-body { margin:0; font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif; background:#f7f5f2; color:#222; }
-header { background:#fff; border-bottom:3px solid var(--accent); padding:48px 20px 36px; text-align:center; }
-h1 { margin:0 0 10px; font-size:30px; color:var(--accent); }
-.sub { color:#666; font-size:15px; max-width:640px; margin:0 auto; line-height:1.8; }
+body { margin:0; font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif; background:var(--bg); color:var(--text); }
+#themeBtn { position:fixed; top:12px; right:14px; z-index:9; font-size:12px; padding:5px 12px; border:1px solid var(--line); border-radius:14px; background:var(--card); color:var(--text); cursor:pointer; }
+header { background:var(--card); border-bottom:3px solid var(--accent); padding:48px 20px 36px; text-align:center; }
+h1 { margin:0 0 10px; font-size:30px; color:var(--accentT); }
+.sub { color:var(--muted); font-size:15px; max-width:640px; margin:0 auto; line-height:1.8; }
 main { max-width:860px; margin:32px auto; padding:0 16px; display:grid; gap:18px; }
-a.card { display:block; background:#fff; border:1px solid #e3e0dc; border-radius:12px; padding:24px 26px;
-  text-decoration:none; color:#222; transition:border-color .15s, transform .15s; }
+a.card { display:block; background:var(--card); border:1px solid var(--line); border-radius:12px; padding:24px 26px;
+  text-decoration:none; color:var(--text); transition:border-color .15s, transform .15s; }
 a.card:hover { border-color:var(--accent); transform:translateY(-2px); }
 a.card h2 { margin:0 0 8px; font-size:19px; color:var(--blue); }
-a.card p { margin:0; color:#666; font-size:14px; line-height:1.8; }
-a.card .go { display:inline-block; margin-top:10px; color:var(--accent); font-weight:600; font-size:14px; }
-footer { text-align:center; color:#aaa; font-size:12px; padding:24px; }
+a.card p { margin:0; color:var(--muted); font-size:14px; line-height:1.8; }
+a.card .go { display:inline-block; margin-top:10px; color:var(--accentT); font-weight:600; font-size:14px; }
+footer { text-align:center; color:var(--muted); font-size:12px; padding:24px; }
 </style>
 </head>
 <body>
+<button id="themeBtn" onclick="toggleTheme()" title="切换深色 / 浅色（默认跟随系统）">☾ 深色</button>
 <header>
   <h1>硬件安全学习中心</h1>
   <p class="sub">系统化的硬件安全知识讲义与自测题库，覆盖密码算法与后量子、侧信道与故障注入、硬件可信根与安全启动、TEE 与机密计算、处理器微架构安全、供应链与调试接口。</p>
@@ -44,5 +48,25 @@ footer { text-align:center; color:#aaa; font-size:12px; padding:24px; }
   </a>
 </main>
 <footer>内容仅供学习交流使用</footer>
+<script>
+function effectiveTheme() {
+  return document.documentElement.dataset.theme ||
+    (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+}
+function updateThemeBtn() {
+  document.getElementById("themeBtn").textContent =
+    effectiveTheme() === "dark" ? "☀ 浅色" : "☾ 深色";
+}
+function toggleTheme() {
+  const system = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  const next = effectiveTheme() === "dark" ? "light" : "dark";
+  document.documentElement.dataset.theme = next;
+  if (next === system) { localStorage.removeItem("theme"); delete document.documentElement.dataset.theme; }
+  else { localStorage.setItem("theme", next); }
+  updateThemeBtn();
+}
+window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", updateThemeBtn);
+updateThemeBtn();
+</script>
 </body>
 </html>

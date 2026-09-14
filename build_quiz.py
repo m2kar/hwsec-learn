@@ -23,49 +23,52 @@ page = """<!DOCTYPE html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>硬件安全刷题</title>
+<script>(function(){var t=null;try{t=localStorage.getItem("theme")}catch(e){}if(!t)t=window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";document.documentElement.dataset.theme=t;})();</script>
 <style>
-:root { --accent:#C7000B; --blue:#1F4E79; --line:#e3e0dc; }
+:root { --accent:#C7000B; --accentT:#C7000B; --blue:#1F4E79; --bg:#f7f5f2; --card:#fff; --text:#222; --muted:#666; --line:#e3e0dc; --optbg:#fafaf8; --selbg:#eef4fa; --okbg:#eef8f0; --okline:#2e8b57; --badbg:#fdf0ef; --badgebg:#f0ece8; --badgetext:#666; --warnbg:#fff3e0; --warntext:#b26a00; color-scheme:light; }
+:root[data-theme="dark"] { --accent:#e5483d; --accentT:#ff6b60; --blue:#8ab8e8; --bg:#14161a; --card:#1d2026; --text:#d6d3cd; --muted:#9a968f; --line:#34383f; --optbg:#23262c; --selbg:#20304a; --okbg:#1d3226; --okline:#4caf7d; --badbg:#3a2020; --badgebg:#2a2d33; --badgetext:#9a968f; --warnbg:#382c16; --warntext:#d8a04a; color-scheme:dark; }
 * { box-sizing:border-box; }
-body { margin:0; font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif; background:#f7f5f2; color:#222; }
-header { background:#fff; border-bottom:3px solid var(--accent); padding:14px 20px; }
-h1 { margin:0 0 8px; font-size:20px; color:var(--accent); }
-#stats { font-size:13px; color:#555; display:flex; gap:16px; flex-wrap:wrap; }
+body { margin:0; font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif; background:var(--bg); color:var(--text); }
+header { position:relative; background:var(--card); border-bottom:3px solid var(--accent); padding:14px 20px; }
+h1 { margin:0 0 8px; font-size:20px; color:var(--accentT); }
+#themeBtn { position:absolute; top:14px; right:20px; font-size:12px; padding:5px 12px; border:1px solid var(--line); border-radius:14px; background:var(--optbg); color:var(--text); cursor:pointer; }
+#stats { font-size:13px; color:var(--muted); display:flex; gap:16px; flex-wrap:wrap; }
 #stats b { color:var(--blue); }
-#controls { display:flex; gap:10px; flex-wrap:wrap; align-items:center; padding:12px 20px; background:#fff; border-bottom:1px solid var(--line); }
-#controls select, #controls button { font-size:13px; padding:6px 10px; border:1px solid var(--line); border-radius:6px; background:#fff; }
+#controls { display:flex; gap:10px; flex-wrap:wrap; align-items:center; padding:12px 20px; background:var(--card); border-bottom:1px solid var(--line); }
+#controls select, #controls button { font-size:13px; padding:6px 10px; border:1px solid var(--line); border-radius:6px; background:var(--card); color:var(--text); }
 #controls button { cursor:pointer; }
 #controls .primary { background:var(--accent); color:#fff; border-color:var(--accent); }
-#controls .ghost { color:#888; border:none; background:none; text-decoration:underline; }
+#controls .ghost { color:var(--muted); border:none; background:none; text-decoration:underline; }
 main { max-width:760px; margin:20px auto; padding:0 16px; }
-.card { background:#fff; border:1px solid var(--line); border-radius:10px; padding:18px 20px; box-shadow:0 1px 3px rgba(0,0,0,.05); }
+.card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:18px 20px; box-shadow:0 1px 3px rgba(0,0,0,.08); }
 .badges { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px; }
-.badge { font-size:12px; padding:2px 8px; border-radius:10px; background:#f0ece8; color:#666; }
-.badge.type { background:#fdeaea; color:var(--accent); font-weight:600; }
-.badge.diff-挑战 { background:#fff3e0; color:#b26a00; }
-#pos { font-size:12px; color:#999; margin-bottom:6px; }
+.badge { font-size:12px; padding:2px 8px; border-radius:10px; background:var(--badgebg); color:var(--badgetext); }
+.badge.type { background:var(--badgebg); color:var(--accentT); font-weight:600; }
+.badge.diff-挑战 { background:var(--warnbg); color:var(--warntext); }
+#pos { font-size:12px; color:var(--muted); margin-bottom:6px; }
 #stem { font-size:16px; line-height:1.6; margin:0 0 14px; font-weight:600; }
-.opt { display:block; width:100%; text-align:left; margin:8px 0; padding:10px 12px; border:1.5px solid var(--line); border-radius:8px; background:#fafaf8; font-size:14.5px; line-height:1.5; cursor:pointer; }
-.opt:hover { border-color:#c9c4be; }
-.opt.sel { border-color:var(--blue); background:#eef4fa; }
-.opt.right { border-color:#2e8b57; background:#eef8f0; }
-.opt.wrongpick { border-color:var(--accent); background:#fdf0ef; }
+.opt { display:block; width:100%; text-align:left; margin:8px 0; padding:10px 12px; border:1.5px solid var(--line); border-radius:8px; background:var(--optbg); color:var(--text); font-size:14.5px; line-height:1.5; cursor:pointer; }
+.opt:hover { border-color:var(--muted); }
+.opt.sel { border-color:var(--blue); background:var(--selbg); }
+.opt.right { border-color:var(--okline); background:var(--okbg); }
+.opt.wrongpick { border-color:var(--accent); background:var(--badbg); }
 .opt.disabled { cursor:default; }
 .letter { font-weight:700; margin-right:6px; color:var(--blue); }
 #feedback { margin-top:14px; padding:12px 14px; border-radius:8px; font-size:14px; line-height:1.7; display:none; }
-#feedback.ok { background:#eef8f0; border-left:4px solid #2e8b57; }
-#feedback.bad { background:#fdf0ef; border-left:4px solid var(--accent); }
+#feedback.ok { background:var(--okbg); border-left:4px solid var(--okline); }
+#feedback.bad { background:var(--badbg); border-left:4px solid var(--accent); }
 #feedback .verdict { font-weight:700; }
-#exp { margin-top:8px; color:#444; }
+#exp { margin-top:8px; color:var(--text); }
 #nav { display:flex; gap:10px; margin-top:16px; }
 #nav button { font-size:14px; padding:9px 22px; border-radius:8px; border:none; cursor:pointer; }
 #submit { background:var(--blue); color:#fff; }
 #next { background:var(--accent); color:#fff; }
 #summary { text-align:center; padding:34px 20px; }
-#summary h2 { color:var(--accent); }
-#summary .nums { font-size:15px; line-height:2; color:#444; }
+#summary h2 { color:var(--accentT); }
+#summary .nums { font-size:15px; line-height:2; color:var(--text); }
 #summary button { margin:8px; font-size:14px; padding:9px 20px; border:none; border-radius:8px; background:var(--blue); color:#fff; cursor:pointer; }
 #summary button.red { background:var(--accent); }
-.hint { font-size:12px; color:#999; margin-top:10px; }
+.hint { font-size:12px; color:var(--muted); margin-top:10px; }
 </style>
 </head>
 <body>
@@ -77,6 +80,7 @@ main { max-width:760px; margin:20px auto; padding:0 16px; }
     <span>正确率 <b id="stRate">–</b></span>
     <span>模拟得分 <b id="stScore">0</b> 分</span>
     <span>错题本 <b id="stWrong">0</b></span>
+    <button id="themeBtn" title="切换深色 / 浅色（默认跟随系统）">☾ 深色</button>
   </div>
 </header>
 <div id="controls">
@@ -240,11 +244,27 @@ $("startBtn").onclick = start;
 $("clearWrong").onclick = () => {
   if (wrongBook.size && confirm("确定清空全部错题记录？")) { wrongBook.clear(); saveWrong(); }
 };
+function effectiveTheme() {
+  return document.documentElement.dataset.theme ||
+    (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+}
+function updateThemeBtn() {
+  $("themeBtn").textContent = effectiveTheme() === "dark" ? "☀ 浅色" : "☾ 深色";
+}
+$("themeBtn").onclick = () => {
+  const system = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  const next = effectiveTheme() === "dark" ? "light" : "dark";
+  document.documentElement.dataset.theme = next;
+  if (next === system) { localStorage.removeItem("theme"); delete document.documentElement.dataset.theme; }
+  else { localStorage.setItem("theme", next); }
+  updateThemeBtn();
+};
+window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", updateThemeBtn);
 (function init() {
   const domains = [...new Set(QUESTIONS.map(q => q.domain))].sort();
   const sel = $("domain");
   domains.forEach(d => { const o = document.createElement("option"); o.textContent = d; sel.appendChild(o); });
-  saveWrong(); start();
+  saveWrong(); start(); updateThemeBtn();
 })();
 </script>
 </body>
