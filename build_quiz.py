@@ -176,9 +176,9 @@ function render() {
     box.appendChild(b);
   });
   $("feedback").style.display = "none";
-  $("submitBtn").style.display = "inline-block";
+  $("submitBtn").style.display = q.type === "多选" ? "inline-block" : "none";
   $("nextBtn").style.display = "none";
-  $("hint").textContent = q.type === "单选" ? "单击选项选择，然后确认。" : "多选题：勾选全部正确选项后确认（需完全选对才得分）。";
+  $("hint").textContent = q.type === "单选" ? "单击选项即确认判分。" : "多选题：勾选全部正确选项后确认（需完全选对才得分）。";
 }
 function pick(L, btn) {
   if (submitted) return;
@@ -187,6 +187,7 @@ function pick(L, btn) {
     picked = new Set([L]);
     document.querySelectorAll(".opt").forEach(o => o.classList.remove("sel"));
     btn.classList.add("sel");
+    submit();
   } else {
     if (picked.has(L)) { picked.delete(L); btn.classList.remove("sel"); }
     else { picked.add(L); btn.classList.add("sel"); }
