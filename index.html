@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>硬件安全刷题</title>
+<style>
+:root { --accent:#C7000B; --blue:#1F4E79; --line:#e3e0dc; }
+* { box-sizing:border-box; }
+body { margin:0; font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif; background:#f7f5f2; color:#222; }
+header { background:#fff; border-bottom:3px solid var(--accent); padding:14px 20px; }
+h1 { margin:0 0 8px; font-size:20px; color:var(--accent); }
+#stats { font-size:13px; color:#555; display:flex; gap:16px; flex-wrap:wrap; }
+#stats b { color:var(--blue); }
+#controls { display:flex; gap:10px; flex-wrap:wrap; align-items:center; padding:12px 20px; background:#fff; border-bottom:1px solid var(--line); }
+#controls select, #controls button { font-size:13px; padding:6px 10px; border:1px solid var(--line); border-radius:6px; background:#fff; }
+#controls button { cursor:pointer; }
+#controls .primary { background:var(--accent); color:#fff; border-color:var(--accent); }
+#controls .ghost { color:#888; border:none; background:none; text-decoration:underline; }
+main { max-width:760px; margin:20px auto; padding:0 16px; }
+.card { background:#fff; border:1px solid var(--line); border-radius:10px; padding:18px 20px; box-shadow:0 1px 3px rgba(0,0,0,.05); }
+.badges { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px; }
+.badge { font-size:12px; padding:2px 8px; border-radius:10px; background:#f0ece8; color:#666; }
+.badge.type { background:#fdeaea; color:var(--accent); font-weight:600; }
+.badge.diff-挑战 { background:#fff3e0; color:#b26a00; }
+#pos { font-size:12px; color:#999; margin-bottom:6px; }
+#stem { font-size:16px; line-height:1.6; margin:0 0 14px; font-weight:600; }
+.opt { display:block; width:100%; text-align:left; margin:8px 0; padding:10px 12px; border:1.5px solid var(--line); border-radius:8px; background:#fafaf8; font-size:14.5px; line-height:1.5; cursor:pointer; }
+.opt:hover { border-color:#c9c4be; }
+.opt.sel { border-color:var(--blue); background:#eef4fa; }
+.opt.right { border-color:#2e8b57; background:#eef8f0; }
+.opt.wrongpick { border-color:var(--accent); background:#fdf0ef; }
+.opt.disabled { cursor:default; }
+.letter { font-weight:700; margin-right:6px; color:var(--blue); }
+#feedback { margin-top:14px; padding:12px 14px; border-radius:8px; font-size:14px; line-height:1.7; display:none; }
+#feedback.ok { background:#eef8f0; border-left:4px solid #2e8b57; }
+#feedback.bad { background:#fdf0ef; border-left:4px solid var(--accent); }
+#feedback .verdict { font-weight:700; }
+#exp { margin-top:8px; color:#444; }
+#nav { display:flex; gap:10px; margin-top:16px; }
+#nav button { font-size:14px; padding:9px 22px; border-radius:8px; border:none; cursor:pointer; }
+#submit { background:var(--blue); color:#fff; }
+#next { background:var(--accent); color:#fff; }
+#summary { text-align:center; padding:34px 20px; }
+#summary h2 { color:var(--accent); }
+#summary .nums { font-size:15px; line-height:2; color:#444; }
+#summary button { margin:8px; font-size:14px; padding:9px 20px; border:none; border-radius:8px; background:var(--blue); color:#fff; cursor:pointer; }
+#summary button.red { background:var(--accent); }
+.hint { font-size:12px; color:#999; margin-top:10px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>硬件安全刷题</h1>
+  <div id="stats">
+    <span>本次已答 <b id="stAnswered">0</b></span>
+    <span>答对 <b id="stCorrect">0</b></span>
+    <span>正确率 <b id="stRate">–</b></span>
+    <span>模拟得分 <b id="stScore">0</b> 分</span>
+    <span>错题本 <b id="stWrong">0</b></span>
+  </div>
+</header>
+<div id="controls">
+  <select id="mode">
+    <option value="seq">顺序刷题</option>
+    <option value="rand">随机刷题</option>
+    <option value="wrong">错题重刷</option>
+  </select>
+  <select id="domain"><option value="">全部知识域</option></select>
+  <select id="qtype"><option value="">全部题型</option><option>单选</option><option>多选</option></select>
+  <select id="diff"><option value="">全部难度</option><option>基础</option><option>进阶</option><option>挑战</option></select>
+  <button id="startBtn" class="primary">开始 / 重置</button>
+  <button id="clearWrong" class="ghost">清空错题本</button>
+</div>
+<main>
+  <div id="quiz" style="display:none">
+    <div class="card">
+      <div id="pos"></div>
+      <div class="badges" id="badges"></div>
+      <p id="stem"></p>
+      <div id="opts"></div>
+      <div id="feedback"></div>
+      <div class="hint" id="hint"></div>
+    </div>
+    <div id="nav">
+      <button id="submitBtn">确认答案</button>
+      <button id="nextBtn" style="display:none">下一题</button>
+    </div>
+  </div>
+  <div id="summary" class="card" style="display:none"></div>
+</main>
+<script>
+const QUESTIONS = [{"id": "Q001", "type": "单选", "domain": "密码算法", "diff": "基础", "stem": "AES-128 的密钥长度与分组长度分别是？", "opts": ["64 位 / 64 位", "128 位 / 64 位", "128 位 / 128 位", "256 位 / 128 位"], "ans": "C", "exp": "AES 密钥支持 128/192/256 位、分组固定 128 位；SM4 与 AES-128 相同、密钥与分组均为 128 位。", "tag": "分组密码参数"}, {"id": "Q002", "type": "单选", "domain": "密码算法", "diff": "基础", "stem": "DES 的有效密钥长度是？", "opts": ["48 位", "56 位", "64 位", "128 位"], "ans": "B", "exp": "DES 密钥 64 位中 8 位为奇偶校验、有效 56 位；1998 年 EFF 的 Deep Crack 已实现暴力破解、现必须替换为 AES 或 SM4。", "tag": "DES"}, {"id": "Q003", "type": "单选", "domain": "密码算法", "diff": "基础", "stem": "SM4 属于哪一类密码算法？", "opts": ["哈希算法", "流密码", "非对称签名算法", "分组密码"], "ans": "D", "exp": "SM4 是国密分组密码：分组与密钥均为 128 位、32 轮非平衡 Feistel 结构；标准为 GB/T 32907-2016。", "tag": "SM4"}, {"id": "Q004", "type": "单选", "domain": "密码算法", "diff": "基础", "stem": "3DES 的有效密钥强度约为？", "opts": ["56 位", "112 位", "168 位", "256 位"], "ans": "B", "exp": "3DES 名义密钥 168 位、受中间相遇攻击影响有效强度约 112 位；另有 SWEET32 生日攻击、NIST 已禁止其在新系统中用于加密。", "tag": "3DES"}, {"id": "Q005", "type": "单选", "domain": "密码算法", "diff": "基础", "stem": "哪种工作模式下相同明文分组会得到相同密文分组？", "opts": ["ECB", "CBC", "CTR", "GCM"], "ans": "A", "exp": "ECB 各分组独立加密、会泄漏明文统计模式（经典企鹅图示例）、实际数据加密禁止使用。", "tag": "工作模式"}, {"id": "Q006", "type": "单选", "domain": "密码算法", "diff": "基础", "stem": "同时提供机密性与完整性保护的认证加密（AEAD）模式是？", "opts": ["ECB", "CBC", "GCM", "OFB"], "ans": "C", "exp": "GCM 由 CTR 加密与 GHASH 认证组成、是 TLS 等协议主流的 AEAD 方案；注意其 nonce 重用会导致认证密钥泄漏。", "tag": "AEAD"}, {"id": "Q007", "type": "单选", "domain": "密码算法", "diff": "基础", "stem": "MD5 的输出长度是？", "opts": ["96 位", "128 位", "160 位", "256 位"], "ans": "B", "exp": "MD5 输出 128 位；其抗碰撞性已被攻破（王小云等 2004 年提出碰撞方法、Flame 恶意软件 2012 年实际利用 chosen-prefix 碰撞伪造签名）。", "tag": "MD5"}, {"id": "Q008", "type": "单选", "domain": "密码算法", "diff": "进阶", "stem": "标志着 SHA-1 被实际攻破的研究是？", "opts": ["RSA-155 分解", "SHAttered 碰撞", "Logjam 降级攻击", "ROCA 缺陷"], "ans": "B", "exp": "2017 年 Google 与 CWI 完成 SHA-1 首例实际碰撞（SHAttered）、2020 年 Shambles 进一步给出 chosen-prefix 碰撞；此后主流浏览器与 CA 全面弃用 SHA-1 证书。", "tag": "SHA-1"}, {"id": "Q009", "type": "单选", "domain": "密码算法", "diff": "基础", "stem": "RSA 算法的安全性基于哪个数学难题？", "opts": ["模乘离散对数", "大整数分解", "椭圆曲线离散对数", "格上最短向量"], "ans": "B", "exp": "RSA 基于大整数分解；DH/DSA 基于模乘离散对数、ECC 基于椭圆曲线离散对数——Shor 算法会让这三类问题全部失效。", "tag": "RSA"}, {"id": "Q010", "type": "单选", "domain": "密码算法", "diff": "基础", "stem": "与 RSA-3072 安全强度相当的 ECC 密钥长度约为？", "opts": ["128 位", "160 位", "256 位", "512 位"], "ans": "C", "exp": "ECC 单位密钥强度更高：256 位椭圆曲线约等效 3072 位 RSA（128 位安全强度）；这也是 TLS 证书普遍采用 P-256/X25519 的原因。", "tag": "ECC"}, {"id": "Q011", "type": "单选", "domain": "密码算法", "diff": "基础", "stem": "SM2 是什么类型的密码算法？", "opts": ["基于 256 位椭圆曲线的公钥算法", "128 位分组密码", "杂凑算法", "流密码"], "ans": "A", "exp": "SM2 为国密椭圆曲线公钥算法（GB/T 32918）、提供加密、签名与密钥交换；量子威胁与 ECC 相同。", "tag": "SM2"}, {"id": "Q012", "type": "单选", "domain": "密码算法", "diff": "进阶", "stem": "SM9 与 SM2 最大的区别是？", "opts": ["SM9 基于大整数分解", "SM9 是标识密码（IBC）、公钥可以是身份标识", "SM9 是流密码", "SM9 只能加密不能签名"], "ans": "B", "exp": "SM9 为标识密码算法、直接用手机号或邮箱等身份串作为公钥、无需证书体系、基于双线性对构造（GM/T 0044）。", "tag": "SM9"}, {"id": "Q013", "type": "单选", "domain": "密码算法", "diff": "基础", "stem": "下列安全属性中、只有数字签名能提供的是？", "opts": ["机密性", "完整性", "认证", "不可否认性"], "ans": "D", "exp": "MAC/HMAC 也能提供完整性与认证、但双方持有同一密钥、无法向第三方证明是谁生成的；签名用私钥生成、公钥可公开验证、因此具备不可否认性。", "tag": "数字签名"}, {"id": "Q014", "type": "单选", "domain": "密码算法", "diff": "进阶", "stem": "RSA 加密的推荐填充方案是？", "opts": ["PKCS#1 v1.5 旧填充", "OAEP", "PSS", "不填充"], "ans": "B", "exp": "教科书式 RSA 是确定性的且易受选择密文攻击；实际加密必须用 OAEP、签名用 PSS。", "tag": "RSA 填充"}, {"id": "Q015", "type": "单选", "domain": "密码算法", "diff": "进阶", "stem": "ECDSA 签名随机数 k 被重用或泄漏的直接后果是？", "opts": ["签名变慢", "单次签名失败", "私钥可被直接恢复", "公钥泄漏"], "ans": "C", "exp": "由两条签名的差分可解出 k、进而恢复私钥；PS3 被破解正是源于固定 k。缓解办法是 RFC 6979 确定性 nonce。", "tag": "ECDSA"}, {"id": "Q016", "type": "单选", "domain": "密码算法", "diff": "基础", "stem": "HMAC 与普通哈希（如 SHA-256）的本质区别是？", "opts": ["输出更短", "引入密钥参与运算", "不需要输入数据", "抗碰撞更强"], "ans": "B", "exp": "MAC 用密钥构造、提供完整性与认证但无不可否认性；HMAC 基于哈希构造、CMAC 基于分组密码构造。", "tag": "MAC"}, {"id": "Q017", "type": "单选", "domain": "密码算法", "diff": "基础", "stem": "对现有公钥密码（RSA/ECC）构成根本威胁的量子算法是？", "opts": ["Grover", "Shor", "BHT", "Diffie-Hellman 扩展"], "ans": "B", "exp": "Shor 算法在多项式时间求解大整数分解与离散对数、使 RSA/DSA/DH/ECC 全部失效；Grover 只给搜索平方加速、对称算法加长密钥即可应对。", "tag": "量子威胁"}, {"id": "Q018", "type": "单选", "domain": "密码算法", "diff": "进阶", "stem": "Grover 算法对 AES-128 的影响是？", "opts": ["完全攻破", "有效强度降至约 64 位", "无影响", "密钥长度自动减半"], "ans": "B", "exp": "Grover 只提供平方加速、AES-128 的量子安全强度约剩 2^64、已不足；后量子时代推荐 AES-256（约 2^128）。", "tag": "Grover"}, {"id": "Q019", "type": "单选", "domain": "密码算法", "diff": "进阶", "stem": "NIST 首批后量子标准中的 ML-KEM（FIPS 203）源自哪个算法、属于什么类型？", "opts": ["SPHINCS+ / 数字签名", "CRYSTALS-Kyber / 密钥封装（KEM）", "Falcon / 数字签名", "Classic McEliece / 数字签名"], "ans": "B", "exp": "FIPS 203 即 ML-KEM（源于 Kyber、格上构造）；FIPS 204 为 ML-DSA（Dilithium 签名）、FIPS 205 为 SLH-DSA（SPHINCS+ 签名）。", "tag": "ML-KEM"}, {"id": "Q020", "type": "单选", "domain": "密码算法", "diff": "挑战", "stem": "同源（Isogeny）路线代表算法 SIKE 被经典计算机攻破（2022 年）说明什么？", "opts": ["格密码同样不安全", "新的数学假设必须经过充分密码分析才能进入标准", "通用量子计算机已经问世", "哈希签名已被攻破"], "ans": "B", "exp": "Castryck 与 Decru 用普通计算机攻破 SIKE、说明未经充分审查的新数学假设风险很高；这也是 NIST 同时标准化的多条路线并选择 HQC 作为异构备份的原因。", "tag": "SIKE"}, {"id": "Q021", "type": "单选", "domain": "同态加密", "diff": "进阶", "stem": "提出首个全同态加密（FHE）构造并引入自举（bootstrapping）思想的学者是？", "opts": ["Shor", "Gentry", "Paillier", "Rivest"], "ans": "B", "exp": "Gentry 于 2009 年基于理想格给出首个 FHE 构造；Paillier 只是加法同态的部分同态方案。", "tag": "FHE"}, {"id": "Q022", "type": "单选", "domain": "同态加密", "diff": "进阶", "stem": "面向 AI 推理、支持近似实数向量运算的 FHE 方案族是？", "opts": ["BGV", "BFV", "CKKS", "TFHE"], "ans": "C", "exp": "CKKS 采用近似算术、天然匹配神经网络运算；BGV/BFV 面向精确整数、TFHE 面向布尔门且自举最快。", "tag": "CKKS"}, {"id": "Q023", "type": "单选", "domain": "同态加密", "diff": "挑战", "stem": "FHE 中自举（bootstrapping）的作用是？", "opts": ["生成密钥", "压缩密文", "在密文域刷新噪声、恢复同态计算能力", "加速解密"], "ans": "C", "exp": "同态乘法会持续增长噪声、乘法深度受限；自举通过同态执行解密电路重置噪声、但计算代价很高、也正是 FHE 硬件加速器的主要负载。", "tag": "自举"}, {"id": "Q024", "type": "单选", "domain": "同态加密", "diff": "进阶", "stem": "Paillier 密码体制的同态性质是？", "opts": ["乘法同态", "加法同态", "全同态", "无同态性"], "ans": "B", "exp": "Paillier 满足加法同态（密文相乘等于明文相加）、RSA 与 ElGamal 为乘法同态；两者均被 ISO/IEC 18033-6 收录。", "tag": "部分同态"}, {"id": "Q025", "type": "单选", "domain": "密码实现", "diff": "进阶", "stem": "密码算法恒定时间（constant-time）实现的核心要求是？", "opts": ["所有运算并行执行", "执行时间与内存访问模式不依赖秘密数据", "时钟频率固定不变", "必须使用专用芯片"], "ans": "B", "exp": "恒定时间为防时序侧信道：避免以秘密值为条件的分支与查表；AES 查表实现被缓存计时攻击是典型反例。", "tag": "恒定时间"}, {"id": "Q026", "type": "单选", "domain": "密码实现", "diff": "进阶", "stem": "TRNG 熵源评估与在线健康测试依据的核心标准是？", "opts": ["NIST SP 800-90B", "ISO/IEC 11889", "FIPS 197", "GM/T 0005"], "ans": "A", "exp": "SP 800-90B 规定熵源估计与在线健康测试（重复计数测试、自适应比例测试）；SP 800-22 是统计测试套件、AIS-31 是德国 BSI 的随机数评估标准。", "tag": "TRNG"}, {"id": "Q027", "type": "单选", "domain": "架构安全特性", "diff": "进阶", "stem": "x86 上由影子栈（SHSTK）与间接分支跟踪（IBT）组成的控制流强制技术是？", "opts": ["CET", "MPK", "SMEP", "TXT"], "ans": "A", "exp": "CET 即控制流强制技术；MPK/PKS 是页保护键、SMEP 禁止内核执行用户态页面、TXT 是 DRTM 动态度量。", "tag": "CET"}, {"id": "Q028", "type": "单选", "domain": "架构安全特性", "diff": "进阶", "stem": "RISC-V 标量加密扩展中、对应国密 SM4 与 SM3 的扩展分别是？", "opts": ["Zkne 与 Zknh", "Zksed 与 Zksh", "Zbkb 与 Zbkc", "Zknd 与 Zknh"], "ans": "B", "exp": "Zksed/Zksh 即 SM4 分组密码与 SM3 杂凑指令；Zkne/Zknd/Zknh 对应 AES 与 SHA-2——国密算法已进入 RISC-V 标准扩展。", "tag": "Zk 扩展"}, {"id": "Q029", "type": "单选", "domain": "侧信道攻击", "diff": "基础", "stem": "SPA（简单功耗分析）最典型的攻击对象是？", "opts": ["AES 的 S 盒运算", "RSA 的平方-乘法操作序列", "SHA-3 的海绵结构", "SM4 的轮密钥加"], "ans": "B", "exp": "RSA 指数的每个比特决定当轮执行平方还是乘法、在单条功耗曲线上形态可辨、因此无需统计即可读出私钥；缓解为恒定时间模幂与指数盲化。", "tag": "SPA"}, {"id": "Q030", "type": "单选", "domain": "侧信道攻击", "diff": "基础", "stem": "抵御 DPA 的主流实现级手段是？", "opts": ["增加密钥长度", "换用 RSA 算法", "掩码（Masking）", "提高时钟频率"], "ans": "C", "exp": "掩码把秘密拆成多份共享分别处理；隐藏（加噪、乱序、双轨逻辑）是另一条路线——两者常组合使用并显著增加面积与性能开销。", "tag": "DPA 防护"}, {"id": "Q031", "type": "单选", "domain": "侧信道攻击", "diff": "基础", "stem": "激光故障注入在攻击分类中属于？", "opts": ["非侵入", "半侵入", "侵入", "远程攻击"], "ans": "B", "exp": "激光注入需要开封去封装但不接触或修改电路、属于半侵入；空间与时间精度最高、可翻转 SRAM 单比特或跳过单条指令。", "tag": "故障注入分类"}, {"id": "Q032", "type": "单选", "domain": "侧信道攻击", "diff": "进阶", "stem": "CPA 攻击中、假设功耗与实测曲线之间通常用什么统计量进行匹配？", "opts": ["方差", "皮尔逊相关系数", "峰度", "傅里叶幅值"], "ans": "B", "exp": "CPA（Brier 等、2004）以 S 盒输出的汉明重量作为假设功耗、与实测功耗计算相关系数、相关性峰值对应的子密钥猜测即正确密钥。", "tag": "CPA"}, {"id": "Q033", "type": "单选", "domain": "侧信道攻击", "diff": "进阶", "stem": "侧信道泄漏建模中的汉明距离（HD）模型适用于？", "opts": ["总线或寄存器从上一状态翻转到下一状态的场景", "静态泄漏电流", "时钟树功耗", "芯片散热"], "ans": "A", "exp": "HD 模型刻画前后两个状态的翻转位数（如寄存器更新、总线传输）、HW 模型刻画当前置位个数——泄漏模型选错会显著降低攻击效率。", "tag": "泄漏模型"}, {"id": "Q034", "type": "单选", "domain": "侧信道攻击", "diff": "进阶", "stem": "TVLA 的本质是？", "opts": ["一种密钥恢复攻击", "固定输入对比随机输入的 Welch t 检验泄漏评估方法", "密钥生成协议", "认证协议"], "ans": "B", "exp": "TVLA（Test Vector Leakage Assessment）不恢复密钥、只判定实现是否存在与密钥相关的泄漏；一阶与高阶检测分别对应无掩码与不同阶数掩码的评估。", "tag": "TVLA"}, {"id": "Q035", "type": "单选", "domain": "侧信道攻击", "diff": "进阶", "stem": "Bellcore 攻击从 RSA-CRT 错误签名恢复私钥的依据是？", "opts": ["gcd(s−s′、N) = p", "出现了新的分解算法", "私钥经侧信道泄漏", "暴力枚举成功"], "ans": "A", "exp": "正确签名与错误签名的差与模数 N 的最大公约数即素数 p、一次故障即可分解 N——因此 RSA-CRT 签名后必须用公钥验签。", "tag": "Bellcore"}, {"id": "Q036", "type": "单选", "domain": "侧信道攻击", "diff": "挑战", "stem": "对 AES 最后几轮注入单字节故障、利用正确与错误密文的差分恢复轮密钥的技术是？", "opts": ["差分故障分析（DFA）", "差分功耗分析（DPA）", "中间相遇攻击", "积分攻击"], "ans": "A", "exp": "DFA（如 Piret-Quisquater 方法）仅需少量故障即可恢复 AES-128 轮密钥；防护依赖冗余计算、校验与故障检测。", "tag": "DFA"}, {"id": "Q037", "type": "单选", "domain": "侧信道防护", "diff": "进阶", "stem": "有源屏蔽（active shield）的作用是？", "opts": ["辅助散热", "顶层金属网被探测或破坏即触发报警并清零密钥", "提高时钟精度", "降低动态功耗"], "ans": "B", "exp": "屏蔽网布于芯片顶层、攻击者开封后探针或激光一旦接触即触发响应——是抗侵入与激光注入的重要手段。", "tag": "有源屏蔽"}, {"id": "Q038", "type": "单选", "domain": "侧信道防护", "diff": "进阶", "stem": "冷启动攻击针对的对象是？", "opts": ["CPU 通用寄存器", "DRAM 断电后的数据残留", "Flash 磨损", "电池电路"], "ans": "B", "exp": "断电后立刻冷却 DRAM 可延长数据残留时间、进而读出内存中的密钥（Halderman 等、2008）；缓解包括开机内存清零、内存加密与 TPM 密封。", "tag": "冷启动"}, {"id": "Q039", "type": "单选", "domain": "硬件可信根", "diff": "基础", "stem": "安全启动与可信启动的本质区别是？", "opts": ["前者用哈希、后者用签名", "前者阻断执行、后者只记录度量", "前者必须搭配 TPM", "两者完全等价"], "ans": "B", "exp": "安全启动逐级验签、验不过就拒绝执行；可信启动逐级度量进 PCR、不阻断、事后通过 Quote 向远端证明系统状态。", "tag": "安全启动"}, {"id": "Q040", "type": "单选", "domain": "硬件可信根", "diff": "基础", "stem": "TPM 的 PCR 状态更新运算为？", "opts": ["直接覆盖写入", "数值累加", "PCR′ = Hash(PCR ‖ 新度量值)", "清零后重算"], "ans": "C", "exp": "extend 运算保证度量历史不可伪造；PCR 重启时清零、配合密封与 Quote 使用。", "tag": "PCR"}, {"id": "Q041", "type": "单选", "domain": "硬件可信根", "diff": "基础", "stem": "FIPS 140-3 中提供温度电压等环境失配防护的最高等级是？", "opts": ["Level 1", "Level 2", "Level 3", "Level 4"], "ans": "D", "exp": "Level 1 无物理防护要求、Level 2 要求防篡改指示（封条涂层）、Level 3 要求篡改响应清零与身份认证、Level 4 增加环境失配防护。", "tag": "FIPS 140-3"}, {"id": "Q042", "type": "单选", "domain": "硬件可信根", "diff": "进阶", "stem": "PUF 相比 OTP 存储密钥的主要优势是？", "opts": ["运算速度更快", "密钥不落入存储介质、由制造随机性现场生成、抗克隆与读取", "功耗更低", "不需要供电"], "ans": "B", "exp": "典型实现有 SRAM PUF（上电状态）与环形振荡器 PUF（频率差）；需配合模糊提取器与辅助数据（helper data）纠正温度和老化带来的抖动。", "tag": "PUF"}, {"id": "Q043", "type": "单选", "domain": "硬件可信根", "diff": "进阶", "stem": "TPM 中代表设备唯一身份的密钥是？", "opts": ["AK", "EK", "SRK", "DEK"], "ans": "B", "exp": "EK（背书密钥）出厂生成并配套证书、用于设备身份；AK（证明密钥）为 Quote 签名以保护隐私；SRK 是存储根密钥。", "tag": "TPM 密钥层次"}, {"id": "Q044", "type": "单选", "domain": "硬件可信根", "diff": "进阶", "stem": "TPM 密封（sealing）将受保护数据绑定到什么之上？", "opts": ["可信时间戳", "指定 PCR 状态", "网络地址", "用户口令"], "ans": "B", "exp": "只有系统处于指定度量状态（配置健康）时才能解密被密封的数据——磁盘加密（如 BitLocker）是典型应用。", "tag": "密封"}, {"id": "Q045", "type": "单选", "domain": "硬件可信根", "diff": "挑战", "stem": "Intel DRTM（动态度量启动）的实现机制是？", "opts": ["SINIT ACM 启动的 TXT", "SMM 处理程序", "Boot Guard", "管理引擎 ME"], "ans": "A", "exp": "TXT 通过 SINIT ACM 在系统运行中随时重建度量环境（AMD 对应 SKINIT）、弥补 SRTM 只覆盖静态启动链的不足。", "tag": "DRTM"}, {"id": "Q046", "type": "单选", "domain": "硬件可信根", "diff": "进阶", "stem": "国内商密体系中服务器密码机遵循的标准是？", "opts": ["GM/T 0028", "GM/T 0030", "GM/T 0018", "GB/T 32907"], "ans": "B", "exp": "GM/T 0030《服务器密码机技术规范》；GM/T 0028 是密码模块安全技术要求、GM/T 0018 是密码设备应用接口（SDF）、GB/T 32907 是 SM4 标准。", "tag": "SSM"}, {"id": "Q047", "type": "单选", "domain": "硬件可信根", "diff": "进阶", "stem": "与 TPM 并列的中国可信密码模块 TCM 采用的算法体系是？", "opts": ["RSA 与 SHA-1", "国密 SM2/SM3/SM4", "纯对称算法", "完全私有的算法"], "ans": "B", "exp": "TCM 可信密码模块采用国密算法体系（接口规范为 GM/T 0012）；TPCM 可信平台控制模块进一步体现可信计算 3.0 双体系主动免疫架构。", "tag": "TCM"}, {"id": "Q048", "type": "单选", "domain": "硬件可信根", "diff": "基础", "stem": "安全启动信任链的信任锚通常是？", "opts": ["网络时间服务", "Boot ROM 代码与 OTP 中的公钥哈希", "云端白名单", "SIM 卡"], "ans": "B", "exp": "Boot ROM 不可改写、OTP 中的公钥哈希防止攻击者直接替换验签公钥；防回滚依赖版本号单调递增（OTP 计数或熔丝）。", "tag": "信任锚"}, {"id": "Q049", "type": "单选", "domain": "TEE", "diff": "基础", "stem": "ARM TrustZone 中负责安全世界与普通世界切换的是？", "opts": ["TZASC", "EL3 的 Secure Monitor", "RMM", "GIC"], "ans": "B", "exp": "普通世界执行 SMC 指令陷入 EL3、由 Secure Monitor（事实标准为 ARM Trusted Firmware）保存恢复上下文并切换世界。", "tag": "TrustZone"}, {"id": "Q050", "type": "单选", "domain": "TEE", "diff": "基础", "stem": "Intel SGX 的威胁模型不承诺防御的是？", "opts": ["恶意 OS 直接读取飞地明文", "被攻陷内核篡改飞地内容", "缓存侧信道观测", "其他进程的越权访问"], "ans": "C", "exp": "SGX 把信任边界收缩到 CPU、能防御 OS 与其他应用、但明确不承诺防御侧信道——Foreshadow、Plundervolt、SGAxe 等攻击均已证实。", "tag": "SGX"}, {"id": "Q051", "type": "单选", "domain": "TEE", "diff": "基础", "stem": "AMD SEV-SNP 相比 SEV-ES 新增的关键能力是？", "opts": ["虚机内存加密", "VM 状态加密", "内存完整性保护与远程证明", "调试通道"], "ans": "C", "exp": "SEV 提供每虚机内存加密、SEV-ES 增加退出进出时的 VM 状态加密、SEV-SNP 再以反向映射表（RMP）提供内存完整性并支持远程证明。", "tag": "SEV-SNP"}, {"id": "Q052", "type": "单选", "domain": "TEE", "diff": "基础", "stem": "ARM CCA 相比 TrustZone 新增的两个安全状态是？", "opts": ["Kernel 与 User", "Root 与 Realm", "Supervisor 与 Hypervisor", "Secure 与 Non-secure"], "ans": "B", "exp": "RME 在原有 Non-secure 与 Secure 之外新增 Root（EL3 Monitor）与 Realm（机密执行环境）两个状态、共四个安全状态。", "tag": "ARM CCA"}, {"id": "Q053", "type": "单选", "domain": "TEE", "diff": "进阶", "stem": "TrustZone 中控制安全内存区域访问的硬件模块是？", "opts": ["TZPC", "TZASC", "MMU", "SMMU"], "ans": "B", "exp": "TZASC（TrustZone Address Space Controller）划定安全 DRAM 区间、TZPC 配置外设的安全属性——两者共同构成 TrustZone 的资源隔离。", "tag": "TZASC"}, {"id": "Q054", "type": "单选", "domain": "TEE", "diff": "挑战", "stem": "SGX 早期采用的远程证明方案是？", "opts": ["EPID", "DCAP", "RSA-PSS", "WebAuthn"], "ans": "A", "exp": "EPID 是群签名方案、验证依赖 Intel 的证明服务；后演进为基于 ECDSA 的 DCAP、摆脱对 EPID 服务的依赖。", "tag": "SGX 证明"}, {"id": "Q055", "type": "单选", "domain": "TEE", "diff": "进阶", "stem": "云上机密虚机（CVM）的代表技术组合是？", "opts": ["SGX 与 Trusty", "SEV-SNP / TDX / CCA Realm", "TPM 与 BitLocker", "NFC 与 SE"], "ans": "B", "exp": "AMD SEV-SNP、Intel TDX 与 ARM CCA Realm 都以虚机为隔离粒度、配套内存加密、完整性与远程证明、是公有云机密计算的主流。", "tag": "机密虚机"}, {"id": "Q056", "type": "单选", "domain": "TEE", "diff": "进阶", "stem": "2024 年公开的、通过 DDR 内存总线信号注入绕过 SEV-SNP/TDX/SGX 完整性校验的攻击是？", "opts": ["TEE.Fail", "Rowhammer", "Spectre", "Logjam"], "ans": "A", "exp": "TEE.Fail 利用内存总线欠速使读数出错、从而绕过完整性校验——说明云机密计算面对强物理攻击者仍有开放问题。", "tag": "TEE.Fail"}, {"id": "Q057", "type": "单选", "domain": "微架构安全", "diff": "基础", "stem": "Meltdown 的根本原因是？", "opts": ["缓存容量过大", "分支预测错误", "乱序执行窗口内越权数据已进入缓存、而权限检查延迟到指令退休时才生效", "DRAM 电荷泄漏"], "ans": "C", "exp": "异常抛出前秘密数据已被缓存编码、攻击者用 Flush+Reload 逐字节恢复；缓解为 KPTI 内核页表隔离——AMD 因权限检查并行化基本免疫。", "tag": "Meltdown"}, {"id": "Q058", "type": "单选", "domain": "微架构安全", "diff": "基础", "stem": "Spectre v2 利用的微架构部件是？", "opts": ["分支目标缓冲器（BTB）", "TLB", "存储缓冲", "中断控制器"], "ans": "A", "exp": "Spectre v2 即分支目标注入、通过污染 BTB 引导内核推测执行攻击者选择的 gadget；v1 是边界检查绕过、v4 是推测存储绕过。", "tag": "Spectre v2"}, {"id": "Q059", "type": "单选", "domain": "微架构安全", "diff": "进阶", "stem": "缓解 Meltdown 的操作系统级措施是？", "opts": ["retpoline", "KPTI 内核页表隔离", "IBPB", "堆地址随机化"], "ans": "B", "exp": "KPTI（源于 KAISER）使用户态页表几乎不映射内核空间、使攻击者无地址可读；retpoline 与 IBPB 针对 Spectre v2。", "tag": "KPTI"}, {"id": "Q060", "type": "单选", "domain": "微架构安全", "diff": "进阶", "stem": "Rowhammer 属于哪一类攻击？", "opts": ["瞬态执行攻击", "DRAM 扰动故障类攻击", "网络协议攻击", "时序侧信道攻击"], "ans": "B", "exp": "反复高频激活同一 DRAM 行导致相邻行位翻转、本质是故障注入；缓解包括目标行刷新（TRR）与 DDR5 的 ACT-RH 计数器。", "tag": "Rowhammer"}, {"id": "Q061", "type": "单选", "domain": "微架构安全", "diff": "进阶", "stem": "需要攻击者与受害者共享物理内存页的缓存攻击原语是？", "opts": ["Prime+Probe", "Flush+Reload", "Evict+Time", "PortSmash"], "ans": "B", "exp": "Flush+Reload 依赖 clflush 与共享页（共享库或页面去重）、分辨率最高；Prime+Probe 无需共享内存、可跨核使用。", "tag": "缓存攻击"}, {"id": "Q062", "type": "单选", "domain": "微架构安全", "diff": "挑战", "stem": "L1TF（Foreshadow）与 Meltdown/Spectre 的关键不同在于？", "opts": ["完全不需要乱序执行", "读取页表项 present=0 时 L1 数据缓存中的陈旧数据、可穿透 SGX 与虚机隔离", "只影响 AMD 处理器", "没有任何缓解措施"], "ans": "B", "exp": "L1TF 利用缺页表项场景下 L1D 的残留数据、对 SGX 与云虚机威胁最大；缓解包括入口刷新 L1D 与微码更新、彻底修复需禁用超线程。", "tag": "L1TF"}, {"id": "Q063", "type": "单选", "domain": "供应链安全", "diff": "基础", "stem": "硬件木马的两个组成部分是？", "opts": ["编译器与调试器", "触发器（Trigger）与载荷（Payload）", "ROM 与 RAM", "传感器与执行器"], "ans": "B", "exp": "触发器决定何时激活（组合逻辑、时序、物理条件）、载荷决定恶意功能（篡改、泄密、拒绝服务）。", "tag": "硬件木马"}, {"id": "Q064", "type": "单选", "domain": "供应链安全", "diff": "基础", "stem": "JTAG 边界扫描对应的 IEEE 标准是？", "opts": ["802.1X", "1149.1", "ISO/IEC 11889", "GM/T 0030"], "ans": "B", "exp": "IEEE 1149.1 定义了 TAP 控制器与边界扫描；ISO/IEC 11889 是 TPM 标准、GM/T 0030 是服务器密码机规范。", "tag": "JTAG"}, {"id": "Q065", "type": "单选", "domain": "供应链安全", "diff": "挑战", "stem": "业界首例在野外发现的 UEFI rootkit 是？", "opts": ["LoJax", "MoonBounce", "BlackLotus", "Stuxnet"], "ans": "A", "exp": "LoJax（ESET 于 2018 年披露、Sednit 组织）首次将恶意代码写入 UEFI 固件实现跨重装系统持久化。", "tag": "UEFI rootkit"}, {"id": "Q066", "type": "单选", "domain": "供应链安全", "diff": "挑战", "stem": "Starbleed（2020 年）攻击的目标是？", "opts": ["Intel SGX", "Xilinx 7 系列 FPGA 的比特流加密", "ARM TrustZone", "TPM 芯片"], "ans": "B", "exp": "Starbleed 利用 BootROM 缺陷提取比特流加密密钥、可解密并伪造任意固件；由于缺陷在固化的 ROM 中、只能物理更换芯片。", "tag": "Starbleed"}, {"id": "Q067", "type": "单选", "domain": "调试接口", "diff": "基础", "stem": "JTAG 标准信号组中不包含以下哪一项？", "opts": ["TCK", "TMS", "TDI", "SCL"], "ans": "D", "exp": "JTAG 信号为 TCK、TMS、TDI、TDO（外加可选的 TRST）；SCL 是 I2C 总线的时钟线。", "tag": "JTAG 信号"}, {"id": "Q068", "type": "单选", "domain": "调试接口", "diff": "进阶", "stem": "返修（RMA）流程中启用调试接口前的正确做法是？", "opts": ["直接打开全部调试功能", "先擦除用户密钥、再授权调试", "保留密钥便于联调", "仅恢复出厂固件"], "ans": "B", "exp": "生命周期管理原则：量产态锁定调试口、返修时先擦密钥再按流程授权（如 ARM ADAC 认证调试）、防止密钥经维修渠道泄漏。", "tag": "生命周期"}, {"id": "Q069", "type": "单选", "domain": "调试接口", "diff": "进阶", "stem": "Apple checkm8 漏洞的特殊性在于？", "opts": ["只影响旧版本系统", "位于固化的 BootROM 中、无法通过升级修补", "需要物理拆解芯片", "只影响基带处理器"], "ans": "B", "exp": "checkm8 是 A 系列芯片 BootROM 的堆溢出漏洞、冷启动即可利用且永久存在；只能靠后续组件限制利用面。", "tag": "BootROM"}, {"id": "Q070", "type": "单选", "domain": "调试接口", "diff": "进阶", "stem": "防御外设 DMA 攻击的关键硬件机制是？", "opts": ["IOMMU", "MMU", "ASLR", "Stack Canary"], "ans": "A", "exp": "IOMMU 对设备发起的 DMA 做地址重映射与访问控制、防止恶意外设直读系统内存；配套措施包括 SMM 加固与 Thunderbolt 等外 port 策略。", "tag": "IOMMU"}, {"id": "Q071", "type": "单选", "domain": "底软漏洞", "diff": "挑战", "stem": "Double-fetch 漏洞的本质是？", "opts": ["缓存连续两次命中", "共享内存被检查两次、而检查与使用之间可被并发篡改（TOCTOU）", "同一条指令被重复执行", "总线数据自动重传"], "ans": "B", "exp": "典型场景是内核对用户态或设备共享内存先校验后使用、攻击者在两次访问之间篡改数据；Bochspwn 用指令级插桩批量发现了此类漏洞。", "tag": "Double-fetch"}, {"id": "Q072", "type": "单选", "domain": "调试接口", "diff": "基础", "stem": "通过量产设备的 UART 调试口、攻击者通常不能直接做到的是？", "opts": ["查看或修改 bootargs", "打断 U-Boot autoboot 进入命令行", "获取无认证的系统 shell", "改写 BootROM 代码"], "ans": "D", "exp": "BootROM 出厂固化、不可改写；UART 影响的是 bootloader 与系统层——改写 ROM 需要侵入式手段且芯片出厂即固定。", "tag": "UART"}, {"id": "Q073", "type": "单选", "domain": "华为硬件安全", "diff": "基础", "stem": "华为基于 ARM TrustZone 构建的自研 TEE 安全操作系统是？", "opts": ["OP-TEE", "iTrustee", "Trusty", "QSEE"], "ans": "B", "exp": "iTrustee 是华为自研微内核 TEE OS、运行于 TrustZone 安全世界、是鲲鹏 BoostKit 机密计算 TrustZone 套件的核心组件；OP-TEE/Trusty/QSEE 分别属于 Linaro/Google/Qualcomm。", "tag": "iTrustee"}, {"id": "Q074", "type": "单选", "domain": "华为硬件安全", "diff": "进阶", "stem": "鲲鹏平台内生国密方案的特点是？", "opts": ["必须搭配外置加密卡", "国密算法运行在 TEE 内、REE 侧提供标准 SDF 接口", "只支持国际算法", "纯软件模拟实现"], "ans": "B", "exp": "国密 SM2/SM3/SM4 模块运行于鲲鹏 TEE（iTrustee）内、REE 侧提供 GM/T 0018 定义的 SDF 接口、免外置加密卡即可获得合规密码能力。", "tag": "内生国密"}, {"id": "Q075", "type": "单选", "domain": "华为硬件安全", "diff": "进阶", "stem": "华为云中提供 KMS、凭据管理、密钥对管理与专属加密（DHSM）的服务是？", "opts": ["OBS", "DEW", "ECS", "CCS"], "ans": "B", "exp": "DEW（密码安全中心）包含 KMS、CSMS 凭据管理、KPS 密钥对管理与 DHSM 专属加密；密钥由 HSM 保护、主密钥不可导出、应用侧普遍采用信封加密。", "tag": "DEW"}, {"id": "Q076", "type": "单选", "domain": "业界生态", "diff": "基础", "stem": "Microsoft 提出并与 AMD、高通等合作集成在 CPU 裸片内的安全处理器是？", "opts": ["SEP", "Pluton", "Titan M", "Nitro"], "ans": "B", "exp": "Pluton 定位为集成在 CPU 内、可经 Windows Update 升级固件的安全处理器、逐步替代离散 TPM；SEP 属 Apple、Titan M 属 Google、Nitro 属 AWS。", "tag": "Pluton"}, {"id": "Q077", "type": "单选", "domain": "业界生态", "diff": "基础", "stem": "Pixel 6 起采用、基于开源项目 OpenTitan 设计的安全芯片是？", "opts": ["Titan M2", "SEP", "Knox Vault", "ATECC608"], "ans": "A", "exp": "Google 的 Titan M2 基于 OpenTitan 开源设计、承担锁屏节流（Weaver）、Verified Boot 状态与密钥存储；ATECC608 是 Microchip 的独立 SE 芯片。", "tag": "Titan M2"}, {"id": "Q078", "type": "单选", "domain": "业界生态", "diff": "进阶", "stem": "AWS 中用于在 EC2 实例内创建隔离执行环境的机密计算服务是？", "opts": ["Nitro Enclaves", "Confidential Space", "DEW", "QingTian Enclave"], "ans": "A", "exp": "Nitro Enclaves 基于 Nitro 系统在 EC2 内划出隔离环境、并与 KMS 联动；Confidential Space 是 Google Cloud 的、DEW 是华为云的、QingTian Enclave 是华为云的。", "tag": "Nitro"}, {"id": "Q079", "type": "单选", "domain": "标准认证", "diff": "基础", "stem": "汽车网络安全工程标准（定义整车开发流程要求）是？", "opts": ["ISO 26262", "ISO/SAE 21434", "IEC 62443", "ISO 9001"], "ans": "B", "exp": "ISO/SAE 21434 定义汽车网络安全工程流程；ISO 26262 是功能安全（Safety）、IEC 62443 是工业控制安全——注意 Safety 与 Security 之辨。", "tag": "汽车标准"}, {"id": "Q080", "type": "单选", "domain": "标准认证", "diff": "基础", "stem": "NIST 于 2023 年选定、编号 SP 800-232 的轻量级密码算法是？", "opts": ["Ascon", "Speck", "SIMON", "Grain"], "ans": "A", "exp": "Ascon 面向资源受限设备；Speck/SIMON 是 NSA 设计的分组密码、Grain 是流密码、均非 NIST 轻量级密码标准。", "tag": "轻量级密码"}, {"id": "Q081", "type": "单选", "domain": "标准认证", "diff": "进阶", "stem": "PSA Certified 认证的最高等级（含渗透测试）是？", "opts": ["Level 1", "Level 2", "Level 3", "Level 4"], "ans": "C", "exp": "PSA Certified 由 Arm 发起、定义 10 个安全目标：Level 1 为问卷声明、Level 2 为实验室评估、Level 3 增加渗透测试。", "tag": "PSA Certified"}, {"id": "Q082", "type": "单选", "domain": "标准认证", "diff": "进阶", "stem": "SESIP 评估标准隶属的标准组织是？", "opts": ["GlobalPlatform", "TCG", "EMVCo", "PCI SSC"], "ans": "A", "exp": "SESIP（IoT 平台安全评估标准）由 GlobalPlatform 维护、等级 1–3、按攻击者潜力定级；TCG 负责 TPM 与 DICE。", "tag": "SESIP"}, {"id": "Q083", "type": "多选", "domain": "密码算法", "diff": "基础", "stem": "下列属于对称密码算法的有？", "opts": ["AES", "SM4", "RSA", "ZUC"], "ans": "ABD", "exp": "AES 与 SM4 是分组密码、ZUC 是流密码、三者均为对称算法；RSA 是非对称算法。", "tag": "对称算法"}, {"id": "Q084", "type": "多选", "domain": "密码算法", "diff": "基础", "stem": "以下哪些算法或参数已不再安全、不应在新系统中使用？", "opts": ["DES", "RC4", "SHA-1", "RSA-1024"], "ans": "ABCD", "exp": "DES 可暴力破解、RC4 存在统计偏差、SHA-1 已被实际碰撞、RSA-1024 强度不足——全部应替换为 AES/SHA-256/RSA-3072 或 ECC-256 等。", "tag": "不再安全"}, {"id": "Q085", "type": "多选", "domain": "密码算法", "diff": "基础", "stem": "下列国密算法与国际算法的功能对应关系正确的有？", "opts": ["SM2 对应椭圆曲线公钥算法（如 ECDSA）", "SM3 对应杂凑算法（如 SHA-256）", "SM4 对应分组密码（如 AES）", "SM9 对应标识密码（IBC）"], "ans": "ABCD", "exp": "SM2 为 256 位椭圆曲线公钥算法、SM3 为 256 位杂凑、SM4 为 128 位分组、SM9 为基于双线性对的标识密码——四组对应均正确。", "tag": "国密算法"}, {"id": "Q086", "type": "多选", "domain": "密码算法", "diff": "基础", "stem": "数字签名可以提供的安全属性包括？", "opts": ["完整性", "认证", "不可否认性", "机密性"], "ans": "ABC", "exp": "签名先哈希后用私钥签署、可公开验证、因此提供完整性与认证并具备不可否认性；机密性必须由加密提供、签名本身不加密。", "tag": "数字签名"}, {"id": "Q087", "type": "多选", "domain": "密码算法", "diff": "进阶", "stem": "下列属于密码实现层面的著名事故的有？", "opts": ["Debian OpenSSL 随机数缺陷（2008）", "PS3 ECDSA 固定 k（2010）", "Infineon ROCA（2017）", "Logjam 降级攻击"], "ans": "ABCD", "exp": "四者分别说明随机数实现、签名 nonce、密钥生成与协议参数都可能出问题——密码实现审计需覆盖全部环节。", "tag": "实现事故"}, {"id": "Q088", "type": "多选", "domain": "密码算法", "diff": "进阶", "stem": "NIST 后量子标准中属于数字签名算法的有？", "opts": ["ML-KEM", "ML-DSA", "SLH-DSA", "HQC"], "ans": "BC", "exp": "ML-DSA（FIPS 204）与 SLH-DSA（FIPS 205）是签名；ML-KEM 与 HQC 是密钥封装机制（KEM）、不是签名。", "tag": "PQC 签名"}, {"id": "Q089", "type": "多选", "domain": "密码算法", "diff": "进阶", "stem": "后量子密码的主要技术路线包括当前仍然有效的？", "opts": ["格密码", "哈希签名", "纠错码", "同源（Isogeny、代表 SIKE 已被攻破）"], "ans": "ABC", "exp": "格（ML-KEM/ML-DSA）、哈希（SLH-DSA、LMS/XMSS）、纠错码（HQC、Classic McEliece）是当前有效路线；同源路线的 SIKE 于 2022 年被经典攻击攻破。", "tag": "PQC 路线"}, {"id": "Q090", "type": "多选", "domain": "密码算法", "diff": "进阶", "stem": "后量子密码迁移的合理措施包括？", "opts": ["采用经典与后量子混合密钥交换（如 X25519MLKEM768）", "建设密码敏捷性（crypto-agility）架构", "盘点密码资产并按数据保密周期排定迁移优先级", "立即废止全部传统算法并切断业务"], "ans": "ABC", "exp": "迁移遵循混合过渡、敏捷架构与资产盘点三条主线；一刀切废止传统算法会切断业务、实际路线是分阶段替换（NIST 计划 2030 年弃用、2035 年禁用 RSA-2048 与 ECC P-256）。", "tag": "后量子迁移"}, {"id": "Q091", "type": "多选", "domain": "同态加密", "diff": "进阶", "stem": "下列属于全同态加密（FHE）主流方案族的有？", "opts": ["BGV/BFV", "CKKS", "TFHE/CGGI", "Paillier"], "ans": "ABC", "exp": "前三者是 FHE 主流方案族；Paillier 只是加法同态的部分同态方案（ISO/IEC 18033-6 收录）。", "tag": "FHE 方案族"}, {"id": "Q092", "type": "多选", "domain": "同态加密", "diff": "进阶", "stem": "下列属于隐私计算技术栈的有？", "opts": ["全同态加密 FHE", "多方安全计算 MPC", "差分隐私 DP", "可信执行环境 TEE"], "ans": "ABCD", "exp": "四者是隐私计算的主要路线：FHE 密文计算、MPC 多方交互、DP 统计加噪、TEE 硬件隔离——实际系统常组合使用、如联邦学习叠加 DP 与 TEE。", "tag": "隐私计算"}, {"id": "Q093", "type": "多选", "domain": "密码实现", "diff": "进阶", "stem": "密码算法库软硬件协同设计的典型体现包括？", "opts": ["x86 AES-NI 与 ARMv8 Crypto Extensions 指令", "RISC-V Zk 标量加密扩展（含 Zksed/Zksh 国密指令）", "格密码 NTT 硬件加速器", "库层 Provider/Engine 与 SDF 接口解耦"], "ans": "ABCD", "exp": "协同设计覆盖指令层（AES-NI、ARMv8 CE、Zk）、加速器层（NTT）与库架构层（OpenSSL Provider、PKCS#11、国密 SDF）——目标是性能与合规兼得、且降级路径同样恒定时间。", "tag": "软硬件协同"}, {"id": "Q094", "type": "多选", "domain": "密码实现", "diff": "进阶", "stem": "恒定时间密码实现应遵守的做法包括？", "opts": ["避免以秘密数据为条件的分支", "避免以秘密数据为索引的查表访问", "密钥使用后立即清零", "RSA 私钥运算使用指数盲化"], "ans": "ABCD", "exp": "四项分别消除时序与缓存泄漏、残留泄漏并对抗 RSA 时序攻击——任何违反都可能被远程计时攻击利用。", "tag": "恒定时间"}, {"id": "Q095", "type": "多选", "domain": "侧信道攻击", "diff": "基础", "stem": "侧信道攻击可以利用的信息源包括？", "opts": ["功耗", "电磁辐射", "执行时间", "声学噪声"], "ans": "ABCD", "exp": "功耗与电磁是最主流的两类、时序可远程利用、声学（Genkin 等的 RSA 提取）与光子发射等也可行——共同点是都与秘密数据存在相关性。", "tag": "侧信道分类"}, {"id": "Q096", "type": "多选", "domain": "侧信道攻击", "diff": "基础", "stem": "侧信道防护手段包括？", "opts": ["布尔掩码", "随机乱序与加噪", "恒定时间实现", "双轨逻辑（WDDL）"], "ans": "ABCD", "exp": "掩码属于分而治之、乱序与加噪属于隐藏、恒定时间针对软件、WDDL 通过双轨平衡功耗——四者常按资产价值组合使用。", "tag": "侧信道防护"}, {"id": "Q097", "type": "多选", "domain": "故障注入", "diff": "基础", "stem": "下列属于故障注入手段的有？", "opts": ["电压毛刺", "时钟毛刺", "激光注入", "电磁故障注入（EMFI）"], "ans": "ABCD", "exp": "电压与时钟毛刺成本最低、EMFI 无需开封、激光精度最高但需开封——FIB 属于侵入式修改、一般也归入物理攻击手段。", "tag": "故障注入分类"}, {"id": "Q098", "type": "多选", "domain": "故障注入", "diff": "进阶", "stem": "针对故障注入的防护措施包括？", "opts": ["关键运算双路冗余比对", "光、电压、温度传感器", "有源屏蔽网", "RSA-CRT 签名后用公钥验签"], "ans": "ABCD", "exp": "前两项是检测与容忍、屏蔽网防开封探测、验签直接消除 Bellcore 类攻击的收益——防护要求按多故障与故障持续存在的假设设计。", "tag": "故障防护"}, {"id": "Q099", "type": "多选", "domain": "物理攻击", "diff": "挑战", "stem": "下列属于半侵入或侵入攻击的有？", "opts": ["激光故障注入", "FIB 聚焦离子束修改电路", "电压毛刺", "时钟毛刺"], "ans": "AB", "exp": "激光注入需开封但不动电路（半侵入）、FIB 直接修改电路（侵入）；电压与时钟毛刺均无需开封、属于非侵入。", "tag": "攻击分类"}, {"id": "Q100", "type": "多选", "domain": "硬件可信根", "diff": "基础", "stem": "硬件可信根的常见形态包括？", "opts": ["Boot ROM", "OTP/eFuse 熔丝", "PUF", "独立安全芯片（SE）"], "ans": "ABCD", "exp": "Boot ROM 提供不可变首级代码、OTP 锚定公钥哈希与生命周期、PUF 现场生成设备密钥、SE 提供独立抗物理攻击环境——四者可组合构成完整信任链。", "tag": "可信根形态"}, {"id": "Q101", "type": "多选", "domain": "硬件可信根", "diff": "进阶", "stem": "TPM 2.0 的组成或能力包括？", "opts": ["PCR 度量寄存器", "EK 与 AK 密钥体系", "密封（Sealing）存储", "物理不可克隆的制造工艺"], "ans": "ABC", "exp": "TPM 提供 PCR、EK/AK 密钥层次、密封与远程证明；PUF 是可信根的一种形态、并不是 TPM 的组成部件——注意区分。", "tag": "TPM 2.0"}, {"id": "Q102", "type": "多选", "domain": "硬件可信根", "diff": "进阶", "stem": "HSM 的典型功能或特征包括？", "opts": ["密钥全生命周期管理且明文密钥不出模块", "高速加解密与签名验签", "真随机数生成", "替代操作系统执行访问控制"], "ans": "ABC", "exp": "HSM 聚焦密码服务与密钥保护（FIPS 140-3 或商密认证）；访问控制是操作系统与 TEE 的职责、不属于 HSM 的功能定位。", "tag": "HSM"}, {"id": "Q103", "type": "多选", "domain": "硬件可信根", "diff": "进阶", "stem": "安全启动信任链的组成要素包括？", "opts": ["Boot ROM 固化代码与 OTP 公钥哈希", "逐级验签后才执行下一级", "版本号单调递增的防回滚机制", "验签失败进入恢复或停机"], "ans": "ABCD", "exp": "四要素缺一不可：没有公钥哈希锚定则签名可被替换、没有防回滚则旧漏洞固件可被刷回、失败处理决定攻击者的重试空间。", "tag": "安全启动"}, {"id": "Q104", "type": "多选", "domain": "硬件可信根", "diff": "挑战", "stem": "远程证明（Remote Attestation）的组成要素包括？", "opts": ["对 PCR 状态的签名引用（Quote）", "验证方提供的随机 nonce 防重放", "证明密钥（AK）签名", "导出平台全部明文密钥供核验"], "ans": "ABC", "exp": "Quote 携带 PCR 值并由 AK 签名、nonce 保证新鲜度；导出明文密钥与证明目标背道而驰——证明只交付度量状态、不交付密钥。", "tag": "远程证明"}, {"id": "Q105", "type": "多选", "domain": "TEE", "diff": "基础", "stem": "下列属于 TEE 或机密计算方案的有？", "opts": ["Intel SGX", "AMD SEV-SNP", "ARM TrustZone 与华为 iTrustee", "RISC-V Keystone"], "ans": "ABCD", "exp": "SGX 是进程级飞地、SEV-SNP 是虚机级机密计算、TrustZone/iTrustee 是世界隔离、Keystone 是 RISC-V 开源 enclave 框架——隔离粒度与 TCB 各不相同。", "tag": "TEE 方案"}, {"id": "Q106", "type": "多选", "domain": "TEE", "diff": "进阶", "stem": "ARM TrustZone 的硬件机制包括？", "opts": ["总线与处理器上的 NS 位", "TZASC 安全内存控制", "SMC 指令与 EL3 Secure Monitor", "RMP 反向映射表"], "ans": "ABC", "exp": "NS 位贯穿 SoC、TZASC 划定安全内存、SMC 与 EL3 完成世界切换；RMP 是 AMD SEV-SNP 的机制、与 TrustZone 无关。", "tag": "TrustZone"}, {"id": "Q107", "type": "多选", "domain": "TEE", "diff": "基础", "stem": "ARM CCA 定义的安全状态包括？", "opts": ["Root", "Secure", "Realm", "Non-secure"], "ans": "ABCD", "exp": "RME 在 TrustZone 的安全与普通世界之外新增 Root 与 Realm、由 GPT 以 4KB 粒度控制物理内存归属、RMM 管理 Realm 生命周期但不进入其信任边界。", "tag": "ARM CCA"}, {"id": "Q108", "type": "多选", "domain": "微架构安全", "diff": "基础", "stem": "Meltdown 与 Spectre 的缓解措施包括？", "opts": ["KPTI 内核页表隔离", "retpoline", "微码更新（IBRS/IBPB/STIBP）", "推测屏障与恒定时间编码"], "ans": "ABCD", "exp": "KPTI 针对 Meltdown、retpoline 与微码针对 Spectre v2、推测屏障与恒定时间针对 v1 与软件侧信道——多层防御需要软硬件协同。", "tag": "瞬态执行缓解"}, {"id": "Q109", "type": "多选", "domain": "微架构安全", "diff": "进阶", "stem": "下列属于瞬态执行（transient execution）攻击的有？", "opts": ["Meltdown", "Spectre v1", "L1TF（Foreshadow）", "Rowhammer"], "ans": "ABC", "exp": "Meltdown 越权读、Spectre 骗执行、L1TF 读陈旧缓存数据都属于瞬态执行；Rowhammer 是 DRAM 扰动故障、不依赖推测执行。", "tag": "瞬态执行"}, {"id": "Q110", "type": "多选", "domain": "微架构安全", "diff": "进阶", "stem": "经典的缓存侧信道攻击原语包括？", "opts": ["Flush+Reload", "Prime+Probe", "Evict+Reload", "差分故障分析"], "ans": "ABC", "exp": "三者都利用缓存命中与未命中的时间差传递信息；差分故障分析属于故障注入类、不属于缓存攻击原语。", "tag": "缓存攻击"}, {"id": "Q111", "type": "多选", "domain": "架构安全特性", "diff": "进阶", "stem": "属于硬件级控制流完整性或内存安全特性的有？", "opts": ["ARM PAC（指针认证）", "ARM BTI（分支目标识别）", "x86 CET（影子栈+IBT）", "ARM MTE（内存标签）"], "ans": "ABCD", "exp": "PAC 与 BTI 构成 ARM 的控制流防护、CET 是 x86 对应方案、MTE 提供内存越界与 UAF 的硬件检测——RISC-V 侧为 Zicfilp/Zicfiss。", "tag": "架构安全特性"}, {"id": "Q112", "type": "多选", "domain": "供应链安全", "diff": "进阶", "stem": "硬件木马的检测方法包括？", "opts": ["与金片对比的侧信道指纹分析", "形式化验证与不可达逻辑分析", "破坏性逆向抽样", "开启 UEFI 安全启动"], "ans": "ABC", "exp": "前三类在设计、制造与来料环节检测木马；安全启动是运行期防护、无法检测已经制造在芯片内部的木马。", "tag": "木马检测"}, {"id": "Q113", "type": "多选", "domain": "供应链安全", "diff": "进阶", "stem": "硬件木马的触发器（Trigger）类型包括？", "opts": ["组合逻辑触发（罕见信号组合）", "时序触发（计数器或状态机）", "物理触发（温度、电压等条件）", "审计日志触发"], "ans": "ABC", "exp": "组合与时序触发最常见、物理触发利用环境条件、混合触发进一步降低误触发概率；审计日志是防护机制、不是木马类型。", "tag": "硬件木马"}, {"id": "Q114", "type": "多选", "domain": "供应链安全", "diff": "进阶", "stem": "固件供应链的真实威胁事件包括？", "opts": ["LoJax（首例野外 UEFI rootkit）", "MoonBounce（UEFI 恶意植入）", "BlackLotus（绕过 Secure Boot 的 UEFI bootkit）", "SWEET32"], "ans": "ABC", "exp": "三者均为固件持久化威胁；SWEET32 是针对 3DES 等 64 位分组密码的生日攻击、与固件供应链无关。", "tag": "固件供应链"}, {"id": "Q115", "type": "多选", "domain": "调试接口", "diff": "基础", "stem": "JTAG 调试口的防护手段包括？", "opts": ["量产时熔丝禁用", "认证调试（挑战-响应授权）", "生命周期状态管理（RMA 先擦密钥）", "更换更粗的排线"], "ans": "ABC", "exp": "熔断最直接、认证调试保留返修能力、生命周期管理兼顾量产与售后；排线粗细与安全性无关。", "tag": "JTAG 防护"}, {"id": "Q116", "type": "多选", "domain": "调试接口", "diff": "基础", "stem": "通过量产设备 UART 调试口攻击者可能做到的有？", "opts": ["查看或修改 bootargs（如 init=/bin/sh）", "打断 U-Boot autoboot 进入命令行", "获取无认证的系统 shell", "直接改写 BootROM 代码"], "ans": "ABC", "exp": "UART 可获得系统级 shell 与启动参数控制；BootROM 出厂固化、任何调试口都无法改写。", "tag": "UART"}, {"id": "Q117", "type": "多选", "domain": "底软漏洞", "diff": "进阶", "stem": "底层软件中常见的内存破坏类漏洞包括？", "opts": ["栈溢出与堆溢出", "使用释放后内存（UAF）与重复释放", "整型溢出", "格式化字符串"], "ans": "ABCD", "exp": "四类都会导致可控的内存破坏；底软环境缺少 ASLR 等缓解、利用门槛往往更低——需要在开发流程中引入 sanitizer 与模糊测试。", "tag": "内存漏洞"}, {"id": "Q118", "type": "多选", "domain": "底软漏洞", "diff": "进阶", "stem": "属于漏洞缓解或安全加固机制的有？", "opts": ["ASLR", "Stack Canary", "ARM MTE", "IOMMU"], "ans": "ABCD", "exp": "ASLR 与 canary 是软件缓解、MTE 提供硬件内存安全检测、IOMMU 隔离设备 DMA——四者分别堵住不同类别的利用路径。", "tag": "漏洞缓解"}, {"id": "Q119", "type": "多选", "domain": "底软漏洞", "diff": "挑战", "stem": "底软漏洞挖掘的常用技术包括？", "opts": ["覆盖率引导的模糊测试（AFL++、libFuzzer）", "符号执行（angr、S2E）", "补丁比对（BinDiff 反推 1-day）", "形式化等价证明可消除全部漏洞"], "ans": "ABC", "exp": "模糊测试、符号执行与补丁比对是主流挖掘手段；形式化证明只能覆盖特定性质、无法一劳永逸消除全部漏洞。", "tag": "漏洞挖掘"}, {"id": "Q120", "type": "多选", "domain": "华为硬件安全", "diff": "基础", "stem": "下列属于华为公开硬件安全实践的有？", "opts": ["自研 TEE OS iTrustee", "鲲鹏机密计算（virtCCA、机密虚机）", "华为云 DEW（KMS 与 DHSM 专属加密）", "金融级 inSE"], "ans": "ABCD", "exp": "iTrustee 是自研微内核 TEE OS、鲲鹏机密计算基于 S-EL2 与 virtCCA、DEW 提供云上 KMS 与专属加密、inSE 用于支付与 eID——覆盖端管云三线。", "tag": "华为实践"}, {"id": "Q121", "type": "多选", "domain": "业界生态", "diff": "基础", "stem": "下列属于开源硬件可信根或 TEE 项目的有？", "opts": ["OpenTitan", "Caliptra", "OP-TEE", "Pluton"], "ans": "ABC", "exp": "OpenTitan 与 Caliptra 是开源 RoT 项目（前者面向通用设备、后者面向数据中心 SoC）、OP-TEE 是开源 TEE OS；Pluton 是微软的闭源方案。", "tag": "开源项目"}, {"id": "Q122", "type": "多选", "domain": "业界生态", "diff": "进阶", "stem": "属于 Android 平台安全机制的有？", "opts": ["Verified Boot（AVB）与防回滚索引", "KeyMint/StrongBox 密钥服务", "RPMB 防重放分区存储", "Face ID 数据在 SEP 内比对"], "ans": "ABC", "exp": "前三项均属 Android 体系；Face ID 与 SEP 是 Apple 的机制、与 Android 无关——两套生态的安全架构注意区分。", "tag": "Android 安全"}, {"id": "Q123", "type": "多选", "domain": "标准认证", "diff": "基础", "stem": "属于 GlobalPlatform 体系的标准或评估框架有？", "opts": ["TEE 规范族（Internal API 等）", "SESIP", "IoTopOn", "PCI PTS"], "ans": "ABC", "exp": "GlobalPlatform 制定 TEE 规范族并发起 SESIP 与 IoTopOn 评估框架；PCI PTS 属于 PCI 安全标准委员会、面向支付终端。", "tag": "GlobalPlatform"}, {"id": "Q124", "type": "多选", "domain": "标准认证", "diff": "进阶", "stem": "汽车网络安全相关的标准、法规与方案包括？", "opts": ["UNECE R155（CSMS 管理体系）", "UNECE R156（软件更新 SUMS）", "ISO/SAE 21434（网络安全工程）", "EVITA（车载 HSM 分级）"], "ans": "ABCD", "exp": "R155/R156 是车型准入强制法规、21434 是工程标准、EVITA 定义车载 HSM 的 Light/Medium/Full 分级——共同构成车联网安全框架。", "tag": "汽车安全"}, {"id": "Q125", "type": "多选", "domain": "标准认证", "diff": "进阶", "stem": "TRNG 或随机数评估相关的标准与方法包括？", "opts": ["NIST SP 800-90B（熵评估与健康测试）", "NIST SP 800-22（统计测试套件）", "德国 BSI AIS-31", "TVLA"], "ans": "ABC", "exp": "前三项针对随机数质量与熵；TVLA 是侧信道泄漏评估方法、与随机数测试无关——这是高频易混点。", "tag": "随机数评估"}, {"id": "Q126", "type": "多选", "domain": "故障测评", "diff": "进阶", "stem": "故障注入测评（FI campaign）通常包括哪些环节？", "opts": ["参数空间扫描（电压、时钟、激光位置与能量）", "定义目标函数（跳过校验、翻转目标比特）", "统计攻击成功率与可重复性", "验证防护响应（传感器报警、密钥清零）"], "ans": "ABCD", "exp": "完整测评覆盖攻击执行与防护验证两侧；只统计成功注入而不验证防护响应、无法得出合规结论。", "tag": "故障测评"}];
+const KEY_WRONG = "hwsec_wrong_v1";
+const $ = id => document.getElementById(id);
+let wrongBook = new Set(JSON.parse(localStorage.getItem(KEY_WRONG) || "[]"));
+let queue = [], idx = 0, picked = new Set(), submitted = false;
+let stats = { answered: 0, correct: 0, score: 0 };
+let mode = "seq";
+
+function saveWrong() {
+  localStorage.setItem(KEY_WRONG, JSON.stringify([...wrongBook]));
+  $("stWrong").textContent = wrongBook.size;
+}
+function renderStats() {
+  $("stAnswered").textContent = stats.answered;
+  $("stCorrect").textContent = stats.correct;
+  $("stRate").textContent = stats.answered ? Math.round(stats.correct / stats.answered * 100) + "%" : "–";
+  $("stScore").textContent = stats.score;
+}
+function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+function buildPool() {
+  const domain = $("domain").value, qtype = $("qtype").value, diff = $("diff").value;
+  let pool = QUESTIONS.filter(q =>
+    (!domain || q.domain === domain) && (!qtype || q.type === qtype) && (!diff || q.diff === diff));
+  if (mode === "wrong") pool = pool.filter(q => wrongBook.has(q.id));
+  if (mode === "rand") shuffle(pool);
+  return pool;
+}
+function start() {
+  mode = $("mode").value;
+  queue = buildPool();
+  idx = 0; stats = { answered: 0, correct: 0, score: 0 };
+  renderStats();
+  $("summary").style.display = "none";
+  if (!queue.length) {
+    $("quiz").style.display = "none";
+    $("summary").style.display = "block";
+    $("summary").innerHTML = "<h2>没有符合条件的题目</h2><div class='nums'>" +
+      (mode === "wrong" ? "错题本是空的，先去刷题吧。" : "请调整筛选条件。") + "</div>";
+    return;
+  }
+  $("quiz").style.display = "block";
+  render();
+}
+function render() {
+  const q = queue[idx];
+  picked = new Set(); submitted = false;
+  $("pos").textContent = "第 " + (idx + 1) + " / " + queue.length + " 题";
+  $("badges").innerHTML =
+    "<span class='badge type'>" + q.type + "</span>" +
+    "<span class='badge'>" + q.domain + "</span>" +
+    "<span class='badge diff-" + q.diff + "'>" + q.diff + "</span>" +
+    "<span class='badge'>" + q.id + "</span>";
+  $("stem").textContent = q.stem;
+  const box = $("opts");
+  box.innerHTML = "";
+  "ABCD".split("").forEach((L, i) => {
+    const b = document.createElement("button");
+    b.className = "opt"; b.dataset.letter = L;
+    b.innerHTML = "<span class='letter'>" + L + ".</span>" + q.opts[i];
+    b.onclick = () => pick(L, b);
+    box.appendChild(b);
+  });
+  $("feedback").style.display = "none";
+  $("submitBtn").style.display = "inline-block";
+  $("nextBtn").style.display = "none";
+  $("hint").textContent = q.type === "单选" ? "单击选项选择，然后确认。" : "多选题：勾选全部正确选项后确认（需完全选对才得分）。";
+}
+function pick(L, btn) {
+  if (submitted) return;
+  const q = queue[idx];
+  if (q.type === "单选") {
+    picked = new Set([L]);
+    document.querySelectorAll(".opt").forEach(o => o.classList.remove("sel"));
+    btn.classList.add("sel");
+  } else {
+    if (picked.has(L)) { picked.delete(L); btn.classList.remove("sel"); }
+    else { picked.add(L); btn.classList.add("sel"); }
+  }
+}
+function submit() {
+  if (submitted) return;
+  if (!picked.size) { alert("请先选择答案"); return; }
+  const q = queue[idx];
+  submitted = true;
+  const ansSet = new Set(q.ans.split(""));
+  const isRight = picked.size === ansSet.size && [...picked].every(x => ansSet.has(x));
+  stats.answered++;
+  if (isRight) {
+    stats.correct++;
+    stats.score += q.type === "单选" ? 2 : 3;
+    if (mode === "wrong") { wrongBook.delete(q.id); }
+  } else {
+    wrongBook.add(q.id);
+  }
+  saveWrong(); renderStats();
+  document.querySelectorAll(".opt").forEach(o => {
+    const L = o.dataset.letter;
+    o.classList.add("disabled");
+    if (ansSet.has(L)) o.classList.add("right");
+    else if (picked.has(L)) o.classList.add("wrongpick");
+  });
+  const fb = $("feedback");
+  fb.className = isRight ? "ok" : "bad";
+  fb.style.display = "block";
+  fb.innerHTML = "<div class='verdict'>" + (isRight ? "回答正确 +" + (q.type === "单选" ? 2 : 3) + " 分"
+      : "回答错误　正确答案：" + q.ans + (mode !== "wrong" ? "　（已加入错题本）" : "")) +
+    "</div><div id='exp'><b>解析：</b>" + q.exp + "　<b>考点：</b>" + q.tag + "</div>";
+  $("submitBtn").style.display = "none";
+  const next = $("nextBtn");
+  next.style.display = "inline-block";
+  next.textContent = idx + 1 >= queue.length ? "查看成绩" : "下一题";
+}
+function summary() {
+  $("quiz").style.display = "none";
+  const s = $("summary");
+  s.style.display = "block";
+  const rate = stats.answered ? Math.round(stats.correct / stats.answered * 100) : 0;
+  s.innerHTML = "<h2>本轮成绩</h2><div class='nums'>" +
+    "共 " + queue.length + " 题　|　已答 " + stats.answered + " 题　|　答对 " + stats.correct + " 题<br>" +
+    "正确率 " + rate + "%　|　模拟得分 " + stats.score + " 分<br>" +
+    "错题本现有 " + wrongBook.size + " 题</div>" +
+    "<button onclick='start()'>再刷一遍（同筛选）</button>" +
+    "<button class='red' onclick='startWrong()'>重刷错题本</button>";
+}
+function startWrong() { $("mode").value = "wrong"; start(); }
+$("submitBtn").onclick = submit;
+$("nextBtn").onclick = () => { idx++; if (idx >= queue.length) summary(); else render(); };
+$("startBtn").onclick = start;
+$("clearWrong").onclick = () => {
+  if (wrongBook.size && confirm("确定清空全部错题记录？")) { wrongBook.clear(); saveWrong(); }
+};
+(function init() {
+  const domains = [...new Set(QUESTIONS.map(q => q.domain))].sort();
+  const sel = $("domain");
+  domains.forEach(d => { const o = document.createElement("option"); o.textContent = d; sel.appendChild(o); });
+  saveWrong(); start();
+})();
+</script>
+</body>
+</html>
