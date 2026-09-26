@@ -1,0 +1,610 @@
+- 硬件安全：以芯片与硬件为对象和根基的信息安全保障，覆盖密码算法、物理攻击、可信根、TEE、微架构、供应链与调试接口
+  - 密码算法【考纲领域1】：考纲要求区分对称与非对称、掌握代表算法与特点、后量子密码与已不安全算法；实现特性（对称快、非对称慢）常考
+    - 密码学基础概念：理解一切算法分类与安全属性的前提
+      - 柯克霍夫原则：算法公开，安全性只依赖密钥的保密；禁止自研保密算法
+      - 安全属性四要素
+        - 机密性：加密提供
+        - 完整性：哈希与 MAC 提供
+        - 认证：MAC、签名、证书提供
+        - 不可否认性：只有数字签名能提供（高频考点）
+      - 攻击模型分级：评估算法强度时假设攻击者能力
+        - 唯密文攻击 COA
+        - 已知明文攻击 KPA
+        - 选择明文攻击 CPA：缩写与功耗分析的 CPA 相同，注意按语境区分
+        - 选择密文攻击 CCA：教科书式 RSA 无填充即在 CCA 下失效
+      - 三大算法类别：按密钥是否相同、有无密钥划分
+        - 对称密码：AES、SM4、3DES、ZUC、ChaCha20；提供机密性
+        - 非对称密码：RSA、ECC、SM2、SM9、DH；密钥交换与签名
+        - 杂凑函数：无密钥；SHA-2、SHA-3、SM3；完整性与数据指纹
+    - 对称密码算法：加解密同一密钥；比非对称快 2~3 个数量级，适合大批量数据（实现特性高频考点）
+      - 基本特点
+        - 同一密钥加解密
+        - 速度快适合大数据
+        - 密钥分发难：n 人两两通信需 n(n-1)/2 个密钥，实际用非对称算法分发会话密钥
+        - 密钥短强度高：128 位即安全；256 位可抗量子 Grover
+      - 分组密码：固定分组逐块加密
+        - 两大结构
+          - Feistel 结构：DES 16 轮、SM4 32 轮，加解密可复用同一电路
+          - SPN 结构：AES 10/12/14 轮
+        - DES【已破】：有效密钥 56 位，1998 年 EFF Deep Crack 暴力破解
+        - 3DES【已破】：有效 112 位；SWEET32 生日攻击，NIST 2023 年后禁止用于加密
+        - AES：国际主流，密钥 128/192/256 位、分组 128 位；无实用攻击
+        - SM4【国密】：国密分组密码 GB/T 32907，Feistel 32 轮，密钥与分组均 128 位
+        - SM1 与 SM7【国密】：算法不公开，以安全芯片形式提供；SM7 用于非接触 IC 卡
+      - 工作模式：分组密码加密任意长度数据的方式（模式风险常考）
+        - ECB【已破】：相同明文得相同密文泄漏模式，禁止用于实际数据
+        - CBC：需不可预测 IV；存在 Padding Oracle 攻击
+        - CTR：流式可并行可随机访问；nonce 重用即致命
+        - GCM：CTR+GHASH 构成 AEAD 认证加密；nonce 重用泄漏认证密钥
+      - 流密码
+        - RC4【已破】：统计偏差攻击，RFC 7465 禁止用于 TLS
+        - ZUC 祖冲之【国密】：国密流密码，进入 3GPP LTE 标准（128-EEA3/EIA3）
+        - ChaCha20-Poly1305：TLS 常用认证加密
+        - Ascon：NIST 2023 年选定的轻量级密码（SP 800-232），面向资源受限设备
+    - 非对称密码算法：公钥公开私钥保密；慢 2~3 个数量级，用于密钥交换与签名（实现特性高频考点）
+      - RSA：基于大整数分解；加密必须 OAEP 填充、签名用 PSS；≥3072 位才等效 128 位强度
+      - DH 与 DSA：基于模乘离散对数；1024 位已不安全（Logjam 降级攻击）
+      - ECC 椭圆曲线：基于 ECDLP；同强度密钥最短，256 位 ECC ≈ 3072 位 RSA；含 ECDSA/ECDH/EdDSA
+      - SM2【国密】：256 位椭圆曲线，加密签名密钥交换一体（GB/T 32918）
+      - SM9【国密】：标识密码 IBC，基于双线性对；以手机号等身份为公钥、免证书
+    - 对称与非对称对比【高频考点】：考纲"区分对称、非对称及各自特点"的答题框架（讲义高频对比表）
+      - 密钥：对称加解密同钥、需保密分发；非对称公钥公开+私钥保密
+      - 速度：对称快，非对称慢 2~3 个数量级
+      - 密钥规模：n 人通信对称需 n(n-1)/2 个密钥；非对称仅需 n 对
+      - 密钥长度：等效 128 位强度——对称 128 位、ECC 256 位、RSA ≥3072 位
+      - 典型用途：对称加密大批量数据；非对称密钥交换、签名、身份认证
+      - 不可否认性：对称无（双方同钥）；非对称数字签名有
+      - 混合加密与数字信封：非对称分发会话密钥、对称加密大批量数据，各取所长
+    - 杂凑函数与消息认证
+      - 安全强度三种口径：原像、第二原像、碰撞抗性；碰撞存在生日界约 2^(n/2)，MD5/SHA-1 被破的是碰撞而非原像
+      - MD5【已破】：王小云 2004 年碰撞攻击；Flame 病毒用前缀碰撞伪造微软签名
+      - SHA-1【已破】：SHAttered 实际碰撞（2017）、Shambles 前缀碰撞（2020），浏览器与 CA 已弃用
+      - SHA-2 系列：224~512 位，当前国际主流
+      - SHA-3：Keccak 海绵结构，与 SHA-2 完全不同，备份路线
+      - SM3【国密】：输出 256 位，强度与 SHA-256 相当（GB/T 32905）
+      - MAC 消息认证码：带密钥的哈希/分组构造，提供完整性认证、无不可否认性；HMAC/CMAC/GMAC；HMAC 构造使 MD5/SHA-1 碰撞难以直接利用（规范上仍不建议）
+      - 数字签名：先哈希后用私钥签名、公钥验证；唯一提供不可否认性
+    - 密钥管理与证书：横切整个密码体系的密钥基础设施
+      - PKI 与 X.509 证书：CA 签发、证书链逐级验证、根 CA 为信任锚
+      - KDF 密钥派生：HKDF、PBKDF2 从口令或主密钥派生子密钥
+      - 密钥生命周期：生成、分发、存储、使用、轮换、销毁全程可控；工程载体见可信根分支（HSM/TPM）
+    - 国密与国际算法对照【国密】：速记对照——分组 SM4 对 AES、公钥 SM2 对 ECDSA、杂凑 SM3 对 SHA-256、流密码 ZUC 对 ChaCha20、标识密码 SM9 国际无商用对应
+    - 已不安全的传统算法汇总【高频考点】：2026 年视角速查表（考纲明确要求）；三种判断口径——被实际攻破必须换、强度不足就加长、用法不当改用法
+      - 被实际攻破 → 必须更换
+        - DES：56 位暴力破解 → AES、SM4
+        - RC4：统计偏差攻击 → AES-GCM、ChaCha20
+        - MD5：碰撞攻击 → SHA-256、SM3
+        - SHA-1：实际碰撞 → SHA-2、SHA-3
+      - 密钥强度不足 → 加长或替换
+        - 3DES：SWEET32、NIST 2023 后禁用 → AES-GCM
+        - RSA-1024 与 DSA-1024：分解与离散对数能力提升 → RSA-3072、ECC-256
+        - ECC-160 及以下：密钥过短 → P-256、X25519、SM2
+      - 使用方式不当 → 正确用法下算法仍安全
+        - ECB 模式：泄漏明文模式 → GCM、CTR+MAC
+        - IV 或 nonce 重用：→ 每次使用唯一随机 IV/nonce
+        - 教科书式 RSA：确定性、易受选择密文攻击 → OAEP 加密、PSS 签名
+        - ECDSA 随机数 k 重用：k 泄漏即可恢复私钥（PS3 事件）→ RFC 6979 确定性 nonce
+    - 量子计算威胁【高频考点】：后量子密码的前提知识
+      - Shor 算法：多项式时间破解大整数分解与离散对数，RSA、DH、ECC、SM2、SM9 全部失效
+      - Grover 算法：平方加速搜索，对称强度减半；AES-128 仅剩 64 位强度、AES-256 仍安全
+      - 先截获后解密 HNDL：现在记录密文等量子机成熟后回溯解密，长周期数据须现在迁移
+      - Mosca 不等式：保密需求年限 x + 迁移耗时 y > 量子机到来时间 z，就必须立即迁移
+    - 后量子密码 PQC【考纲重点】：考纲要求掌握 NIST 已标准化算法（国内尚未落地）
+      - 技术路线
+        - 格密码 Lattice：性能最好，NIST 主推；ML-KEM、ML-DSA、FN-DSA
+        - 哈希签名 Hash-based：安全假设最少、签名大；SLH-DSA 无状态，LMS/XMSS 有状态适合固件签名
+        - 纠错码 Code-based：Classic McEliece 公钥极大；HQC 为 NIST 备用 KEM
+        - 多变量 Multivariate【已破】：Rainbow 2022 年被 Beullens 攻破
+        - 同源 Isogeny【已破】：SIKE 2022 年被经典攻击攻破，重要教训
+      - NIST 标准化现状
+        - FIPS 203 ML-KEM：源于 Kyber，密钥封装 KEM，2024-08 发布
+        - FIPS 204 ML-DSA：源于 Dilithium，数字签名，2024-08 发布
+        - FIPS 205 SLH-DSA：源于 SPHINCS+，数字签名，2024-08 发布
+        - FIPS 206 FN-DSA：源于 Falcon，紧凑签名；2026 年仍处于草案阶段
+        - IR 8545 HQC：纠错码备用 KEM，2025-03 选定
+        - KEM 与签名区分【高频考点】：ML-KEM、HQC 是密钥封装；ML-DSA、SLH-DSA、FN-DSA 是签名
+      - 迁移趋势
+        - NIST 时间表：RSA-2048、ECC P-256 等 2030 年弃用、2035 年禁用
+        - 混合模式 Hybrid：经典+后量子并联（TLS 1.3 的 X25519MLKEM768），单边被破仍安全
+        - 密码敏捷性：算法可配置可替换的架构能力，迁移的工程前提
+        - 中国进展【国密】：2025 年启动新一代商密算法征集（要求兼抗量子）；国密局 46/55 号公告定抗量子迁移架构与敏捷性指标
+        - 硬件影响：PQC 密钥与签名达 KB 量级、运算以多项式乘法为主，需 NTT 硬件加速器
+    - 同态加密与隐私计算【拓展】：岗位描述定向增强内容，FHE 硬件加速是密码与芯片交叉点
+      - 同态分级：PHE 部分同态 → SWHE 有限深度 → FHE 全同态（密文上算任意函数）
+      - 部分同态经典方案：RSA/ElGamal 乘法同态、Paillier 加法同态，入 ISO/IEC 18033-6
+      - FHE 构造：Gentry 2009 首创，基于格（天然抗量子），核心为 bootstrapping 自举刷新噪声
+      - 方案族分工
+        - BGV/BFV：精确整数运算，适合密文查询统计
+        - CKKS：近似实数，AI 密态推理首选
+        - TFHE：布尔门、逐门自举最快
+      - 硬件加速：明文比密文快 3~6 个数量级，核心是 NTT 多项式乘法引擎；HEAX、DARPA DPRIVE（F1/CraterLake）
+      - 隐私计算技术栈对比
+        - MPC 多方安全计算：秘密分享/混淆电路，无硬件信任但通信量大
+        - TEE：性能好生态成熟，但信任硬件厂商
+        - 差分隐私 DP：统计输出加噪，有隐私预算但精度受损
+        - 联邦学习 FL：数据不动模型动，常与 FHE/DP/TEE 叠加
+    - 密码算法实现：算法安全不等于实现安全；考纲关注对称快非对称慢的实现特性
+      - 软件实现要点
+        - 恒定时间原则：执行时间与访存模式不得依赖秘密数据，防时序侧信道
+        - 指数盲化与确定性 nonce：RSA 盲化、ECDSA 用 RFC 6979
+        - 密钥生命周期：用后清零、禁入交换分区与核心转储
+        - 使用经审计密码库：OpenSSL、BoringSSL、mbedTLS、openHiTLS；禁止自研算法
+        - 白盒密码【拓展】：把密钥混淆进实现、在不可信宿主环境执行；DRM 场景与 TEE+SE 组合使用
+      - 硬件实现要点
+        - 密码协处理器：AES-NI、鲲鹏 KAE 等指令/引擎级加速，密钥只在专用寄存器
+        - 真随机数发生器 TRNG：物理熵源+数字化+在线健康测试（NIST SP 800-90B/C）；随机数是密码体系根基
+        - 防物理攻击设计：掩码、隐藏、传感器与物理防护一体设计
+      - 软硬件协同设计
+        - 指令扩展：x86 AES-NI/VAES/SHA-NI、ARMv8 Crypto Extensions、鲲鹏 KAE、RISC-V Zk（含 SM4/SM3 的 Zksed/Zksh）
+        - 库架构解耦：OpenSSL 3 Provider、PKCS#11、国密 SDF 接口（GM/T 0018）；降级路径也须恒定时间
+        - 协同要点：小数据走指令大数据走引擎、零拷贝批量提交、软硬版本一致性 KAT 进 CI
+      - 历史实现事故【高频考点】
+        - Debian OpenSSL 随机数缺陷（2008）：删代码致熵源近零，密钥可预测
+        - PS3 ECDSA 固定 k（2010）：签名随机数重用致私钥恢复
+        - ROCA（Infineon 2017）：RSA 密钥生成缺陷，智能卡密钥可被实际分解
+        - Dual_EC_DRBG 后门（2013 曝光）：标准算法可能藏后门
+        - Logjam：导出级弱参数被降级攻击利用
+  - 物理攻击与防护【考纲领域2】：密码芯片攻防，考试占比最高；侧信道与故障注入的类型、平台环境与防护手段是核心
+    - 攻击者模型与分类：按"是否接触/损坏芯片"与"主动/被动"两维度分类（全章框架）
+      - 非侵入·被动：侧信道——观测功耗电磁时序声学，不破坏封装、成本低
+      - 非侵入·主动：电压/时钟毛刺、温度、过压，使芯片瞬时出错
+      - 半侵入：激光注入（需开封不接触电路）、电磁故障注入 EMFI
+      - 侵入：FIB 聚焦离子束、微探针读总线、逐层逆向 SEM；实验室级成本、能力最强
+    - 侧信道攻击 SCA【考纲重点】：利用运行时泄漏的物理副信息与秘密的相关性恢复密钥；数学安全不等于实现安全
+      - 泄漏原理与模型：CMOS 动态功耗与翻转比特数相关，汉明重量 HW/汉明距离 HD 泄漏模型
+      - 信息源分类
+        - 功耗侧信道：采集需串电阻或改装、信噪比高、反映芯片全局活动；代表 SPA/DPA/CPA
+        - 电磁侧信道：近场探头非接触、可局部化到芯片某区域绕过全局噪声，但易受环境干扰；代表 SEMA/DEMA
+        - 时序侧信道：分支查表缓存命中致时间依赖密钥；Kocher 时序攻击（1996）、远程计时
+        - 声学侧信道：电容与线圈工作时发声泄漏密钥信息
+        - 缓存与微架构侧信道：共享资源争用时差；Flush+Reload 等（与微架构安全分支交叉）
+        - 其他：光子发射背面成像、跨设备电源传导泄漏
+      - 攻击强度阶梯【高频考点】
+        - SPA 简单功耗分析：单条曲线看操作形态，RSA 平方-乘法每步形态不同
+        - DPA 差分功耗分析：数百至数千条曲线，猜测子密钥按泄漏模型分组做差分统计
+        - CPA 相关功耗分析：假设功耗与实测曲线算相关系数，效率更高
+        - 高阶 DPA：联合多时间点多维信息，对付掩码实现（一阶掩码需二阶分析）
+        - 模板与机器学习攻击：先 profiling 建模再匹配，能力最强；ASCAD 为公开数据集
+      - 经典攻击案例
+        - 智能卡 DPA（Kocher 1999）
+        - Minerva（2019）：OpenSSH/智能卡 ECDSA 时序泄漏
+        - TPM-FAIL（2019）：TPM 2.0 ECDSA 时序攻击
+        - 手机声学提取 RSA（2014）
+      - 侧信道测试平台：攻击门槛已低至数千元，开源设备即可完成采集与注入
+        - 采集硬件：高速示波器/采集卡、电流探头或采样电阻、电磁近场探头、屏蔽箱
+        - 成套平台：开源 ChipWhisperer（采集+注入一体）；商用 Riscure Inspector（机构标配）
+    - 侧信道防护【考纲重点】：与攻击类型一一对应，"掩码分而治之、隐藏降信噪比"两大流派
+      - 掩码 Masking：秘密拆成 d+1 份共享分别处理；布尔/算术掩码；硬件需抗毛刺（Threshold Implementation）；面积性能代价大
+      - 隐藏 Hiding：降信噪比——加噪声、随机延时、轮操作乱序 shuffle、双轨预充电逻辑 WDDL/MDPL
+      - 恒定时间实现：无秘密依赖分支查表访存，仅防软件类侧信道
+      - 算法与协议层：RSA 指数盲化、ECDSA 确定性 nonce、bitslice 恒定时间 AES
+      - 物理层防护：有源屏蔽层 active shield（被探测即报警清零）、稳压滤波
+      - 评估与认证：TVLA（Welch t 检验固定 vs 随机）泄漏评估；通过认证不等于绝对安全
+    - 故障注入 FI【考纲重点】：施加瞬时物理扰动诱使关键计算出错，利用错误行为破坏安全机制
+      - 注入手段分类【高频考点】
+        - 电压毛刺 Voltage Glitch：瞬拉电源致亚稳态/指令跳过；非侵入、成本极低、入门首选
+        - 时钟毛刺 Clock Glitch：异常短周期致建立时间违例，寄存器锁存错误值
+        - 温度注入：超低温保持 SRAM 数据（配合冷启动攻击）、高温诱发错误
+        - 电磁故障注入 EMFI：线圈脉冲强磁场感应扰动；无需开封，精度低于激光
+        - 激光故障注入 LFI【考纲重点】：光子在 PN 结产生光电流翻转比特；背面红外穿透衬底避金属层；空间时间精度最高，可翻单比特跳单指令；需开封、设备昂贵
+        - FIB 聚焦离子束：物理切割/沉积永久修改电路，配合微探针；侵入式成本极高
+      - 测试平台硬件环境【考纲重点】：考纲明确要求了解搭建故障注入平台所需硬件
+        - 毛刺源：电压毛刺发生器、任意波形发生器、时钟毛刺 PLL 芯片
+        - 激光系统：红外激光源（1064/1300nm）+ 聚焦物镜，背面照射需红外
+        - 精密位移台：XYZ 三轴微米级定位，扫描芯片表面/背面
+        - 电磁注入装置：脉冲功率驱动器 + 各尺寸探头线圈
+        - 观测与采集：高速示波器/采集卡观测功耗与触发对齐
+        - 触发同步：目标程序输出 GPIO 触发，注入时机精确到指令级
+        - 样品前处理：化学或等离子开封去封装、必要时去层；屏蔽箱与温控环境
+        - 成套平台：开源 ChipWhisperer（侧信道+毛刺一体化）；商用 Riscure Inspector 为机构标配
+      - 经典攻击（故障变现方式）【高频考点】
+        - Bellcore 攻击：RSA-CRT 签名注入一次故障，gcd(s-s',N)=p 直接分解 N；防护是签名后公钥验签
+        - AES 差分故障分析 DFA：最后几轮注入单字节故障，正误密文差分恢复轮密钥
+        - 指令跳过：毛刺打比较+跳转绕过 PIN、验签、次数计数器，实际攻击最常用
+        - Safe-Error 攻击：观察操作出错与否对行为的影响推断秘密比特
+        - 冷启动攻击：断电即刻冷却 DRAM 读残留密钥（2008）
+        - 2026 年新案例【2026前沿】：Ledger Donjon 公开 TROPIC01 安全元件激光注入与 Tangem 卡 LFI 攻击
+      - 实际场景：游戏机破解（PS3 glitch、Switch Fusée Gelée）、硬件钱包毛刺攻击、汽车 ECU 克隆、智能卡盗版
+    - 故障注入防护【考纲重点】：检测-冗余-自检-反应四条线，按多故障持续注入假设设计
+      - 检测 Detect：光传感器、电压/温度/频率传感器、有源屏蔽网 active mesh、双采样毛刺检测器
+      - 冗余 Tolerate：双路计算比对、时间冗余重复执行、ECC 校验存储、关键数据多数表决
+      - 协议自检：RSA-CRT 签名后公钥验签防 Bellcore、密文 MAC 校验、关键分支重复判断
+      - 反应 React：fail-closed 失败即关闭——检测到异常清零密钥进入锁定；防回滚计数器
+      - 鲁棒性设计：假设激光可反复注入的多故障场景；随机化执行流增加攻击难度
+    - 场景与防护等级匹配【高频考点】：按"攻击成本-资产价值"阶梯选择防护等级
+      - 金融 IC 卡与 SIM/eSIM：SE 芯片，CC EAL4+/5+ 加商密认证
+      - 手机 TEE/SE：inSE/eSE + TrustZone 软硬结合，保护指纹支付 DRM
+      - 电子护照与身份证：SE + 抗物理攻击认证
+      - IoT 与汽车 ECU：安全启动 + 调试口管控 + 毛刺防护
+      - 加密货币硬件钱包：SE + 抗电压毛刺设计，公开攻击多针对毛刺防护缺陷
+      - DRM 内容保护：TEE（Widevine L1）+ 白盒 + SE
+  - 硬件可信根与安全模块【考纲领域3】：Root of Trust 核心功能——安全启动、度量、密钥管理、加解密、随机数、远程证明；典型产品 HSM 与 TPM
+    - 硬件可信根 RoT：系统中无条件被信任的最低层硬件基元，整条信任链起点
+      - 核心特征：不可篡改、最小 TCB、可验证
+      - 核心功能清单【高频考点】：安全/可信启动、密钥生成与安全存储、真随机数、密码运算加速、远程证明、密封存储、防回滚、调试口管控
+      - 典型形态
+        - Boot ROM：芯片内置只读启动代码，信任链第一环，验证第一级 bootloader
+        - OTP/eFuse 熔丝：一次性可编程，存启动公钥哈希、安全策略、生命周期状态
+        - PUF 物理不可克隆函数：利用芯片制造随机性现算密钥/ID，密钥不落存储、抗克隆
+          - 常见类型：SRAM 上电状态 PUF、环形振荡器频率 PUF、仲裁器 PUF
+          - 模糊提取器：纠正环境抖动，从带噪激励稳定恢复密钥
+        - 独立安全芯片 SE：智能卡级抗物理攻击，独立供电存储
+        - 处理器内置安全岛：SoC 内隔离安全子系统；麒麟安全岛、Intel CSME、AMD PSP、微软 Pluton
+        - 板级可信模组：TPM/TCM，平台度量、证明、密封
+    - 安全启动与可信启动【考纲重点】
+      - 安全启动 Secure Boot：逐级验签、验不过不执行；目标是完整性——只有授权代码能运行
+        - 信任链：Boot ROM 验 BL1、BL1 验 BL2，逐级到 OS 内核
+        - 信任锚：ROM 代码 + OTP 中固件签名公钥哈希（防直接换公钥）
+        - 防回滚：版本单调递增，OTP 计数记录最低可接受版本
+      - 可信启动 Measured Boot：逐级度量、只记录不拦截；目标是可证明性
+        - PCR 扩展运算：PCR_new = Hash(PCR_old ‖ 度量值)，不可伪造历史
+        - CRTM：度量链起点（如 BIOS 代码段）
+        - 远程证明：用 PCR 状态做 Quote 签名（AK 密钥+nonce 防重放）供远端比对白名单
+      - 安全启动 vs 可信启动【高频考点】：验签阻断回答"能不能跑"，度量记录回答"处于什么状态"
+      - SRTM 与 DRTM：静态度量从上电固定点到 OS；DRTM 运行中重建度量环境（Intel TXT、AMD SKINIT）
+    - TPM 可信平台模块【考纲重点】：TCG 标准化独立密码模块（ISO/IEC 11889，现 TPM 2.0）；考纲要求掌握其安全能力
+      - 提供的安全能力：PCR 度量、密钥分层管理、签名加密、随机数、密封存储、远程证明
+      - 三类根密钥【高频考点】
+        - EK 背书密钥：设备唯一身份，出厂配证书
+        - SRK 存储根密钥
+        - AK 证明密钥：做 Quote 签名，保护隐私
+      - PCR 特性：只能 extend、重启清零、不可篡改历史
+      - 密封 Sealing：数据加密绑定到指定 PCR 状态，系统配置健康才能解密（BitLocker）
+      - 固件 TPM（fTPM）：跑在 TEE 里的软件 TPM（Intel PTT、AMD fTPM），强度依赖 TEE
+      - DICE 轻量级身份（TCG）：面向无大容量存储的受限设备的硬件身份派生与证明概要；Titan M、Chromebook 采用
+      - 中国可信计算【国密】
+        - TCM 可信密码模块：采用 SM2/SM3/SM4（GM/T 0012）
+        - TPCM 可信平台控制模块：可信计算 3.0"双体系、主动度量"架构（沈昌祥体系）
+    - HSM 硬件安全模块【考纲重点】：专用抗物理攻击密码设备，密钥全生命周期不出模块
+      - 形态：PCIe 密码卡、网络型 HSM、USB、云 HSM
+      - 接口：PKCS#11、CNG/JCA；国密体系 SDF 接口（GM/T 0018）
+      - 典型应用：CA 根密钥保护、支付 PIN/密钥体系、代码签名、区块链密钥托管
+      - FIPS 140-3 安全等级【高频考点】
+        - Level 1：单芯片级，无物理防护要求
+        - Level 2：防篡改指示——涂层封条锁；角色认证
+        - Level 3：篡改响应——被侵入即清零密钥；防拆外壳
+        - Level 4：环境失配防护——温压传感器，环境异常即清零
+    - SSM 服务器密码机【国密】：国内商密体系服务端密码设备（GM/T 0030），分层密钥体系；云化形态为云密码机/VSM
+    - 各类安全模块对比【高频考点】
+      - SE 安全单元：芯片形态（SIM/eSE/inSE），抗物理攻击最强 EAL5+/6+，管支付身份密钥
+      - TEE：SoC 内隔离执行环境，隔离富 OS，物理防护弱
+      - TPM/TCM：板级模组或 fTPM，度量证明密封
+      - HSM：卡/盒子/云服务，密钥不出模块
+      - SSM：机架设备/虚拟机，国密合规密评
+  - 可信执行环境 TEE 与机密计算【考纲领域4】：主流工业方案 Intel SGX、AMD SEV、ARM 方案；重点 ARM CCA 与安全分级；RISC-V TEE 不在考试范围
+    - TEE 基本概念
+      - 定义：与富执行环境 REE 硬件级隔离的执行环境，提供隔离执行与机密性完整性保护
+      - 基本元素：TA 可信应用跑在 TEE 内，CA 客户端应用跑在 REE，共享内存+消息交互
+      - 典型能力：隔离执行、安全存储（RPMB 防回滚分区）、密钥管理、可信 UI、远程证明
+      - GlobalPlatform 标准：TEE 系统架构与 Internal API 的工业标准
+      - 防御边界【高频考点】：能防御被攻陷的 REE 内核；不能防御物理攻击与微架构侧信道
+      - TEE 与 SE 关系：TEE 算力强物理弱、SE 物理最强算力弱；手机常见 inSE 管根密钥 + TEE 做运算
+    - ARM TrustZone【考纲重点】
+      - 双世界划分：安全世界/普通世界，NS 位贯穿处理器模式、AXI 总线、内存控制器与外设
+      - 硬件组件
+        - TZASC：安全内存控制器，划定安全 DRAM 区间
+        - TZPC：外设按安全/非安全配置
+        - GIC 中断分组
+      - 世界切换：SMC 指令陷入 EL3 Secure Monitor，保存恢复上下文；EL3 固件事实标准 TF-A
+      - 异常级与安全分级【考纲重点】：考纲"SER2/SER3 分级"对应安全世界异常级概念
+        - EL0：用户态（普通世界 App / S-EL0 跑 TA）
+        - EL1：内核 / S-EL1 跑 TEE OS（OP-TEE、iTrustee 等）
+        - S-EL2：ARMv8.4 起安全世界虚拟化（Hafnium），机密虚机的底座
+        - EL3：Secure Monitor 最高特权，管理世界切换
+      - TEE OS 生态：OP-TEE、QSEE、Kinibi、Trusty、华为 iTrustee
+    - Intel SGX
+      - 飞地 Enclave：普通 OS 内为单进程划出隔离区，信任边界缩到 CPU 芯片，OS/驱动/BIOS 全不可信
+      - 机制：EPC 加密内存页（MEE）、Sealing 密钥绑定 CPU、远程证明 EPID→DCAP/ECDSA
+      - 现状：客户端 11 代起移除，服务器保留并由 TDX 接棒
+      - 已知攻击【高频考点】
+        - Foreshadow/L1TF（2018）：L1 缓存读出飞地数据
+        - Plundervolt（2019）：软件控电压扰动飞地计算
+        - SGAxe（2020）：MDS 抽取密钥并伪造证明
+        - ÆPIC Leak 与 Downfall：2022-2023 架构级与指令级跨飞地泄漏
+    - AMD SEV 家族【高频考点】
+      - SME：整机内存单一 AES 密钥加密，防物理嗅探内存总线
+      - SEV：每虚机独立内存加密密钥，防宿主/hypervisor 读 guest 内存
+      - SEV-ES：VM 退出进入时加密寄存器状态，防 hypervisor 观察
+      - SEV-SNP：加内存完整性保护（RMP 反向映射表）+ 固件度量与证明
+      - 已知攻击
+        - SEVered 与 CrossLine：早期版本完整性缺失
+        - TEE.Fail（2024）：DDR 总线注入降速信号绕过 SNP/TDX/SGX 完整性校验
+        - MilanLaunchy（2026）【2026前沿】：提取 AMD EPYC Milan 根 VCEK 种子，动摇 SEV 远程证明
+    - 其他机密计算方案
+      - Intel TDX：虚机粒度 Trust Domain，T-Module 运行于 SEAM 模式；与 SEV-SNP 同为机密虚机主流
+      - NVIDIA Confidential Computing：H100 起 GPU TEE，显存加密+链路加密+证明，大模型数据可用不可见
+    - ARM CCA 机密计算架构【考纲重点】：考纲要求重点复习；ARMv9 CCA 建立在 RME 之上
+      - RME Realm 管理扩展：把 TrustZone 两个世界扩展为四个安全状态
+      - 四个安全状态【高频考点】
+        - Root：EL3 Monitor 固件（TF-A），最高特权，TCB 之根
+        - Secure：传统 TrustZone TEE
+        - Realm：硬件隔离机密虚机，连 TEE 与 hypervisor 都不在其信任边界内
+        - Non-secure：普通 OS 与 hypervisor
+      - GPT 粒度保护表：以 4KB 粒度把物理内存划给四个状态，越界访问硬件拒绝
+      - RMM：管理 Realm 创建运行销毁，但按设计不属于 Realm 的 TCB；为 Realm 出具度量证明
+      - 安全等级的三种理解【高频考点】
+        - 状态隔离等级：Non-secure < Secure < Realm < Root
+        - 方案隔离强度：TrustZone TEE < SEV < SEV-SNP/TDX < SGX ≈ CCA Realm
+        - 证明合规等级：是否提供硬件远程证明
+    - RISC-V TEE【拓展】：考试不考；Keystone 开源 Enclave 框架、蓬莱 Penglai（sPMP 可扩展内存保护，中科院软件所与华为等）
+    - TEE 攻击面与局限【高频考点】
+      - TEE OS 漏洞提权：内存破坏漏洞可升级为 TEE 内提权（QSEE、Trusty 历史高危案例）
+      - 微架构侧信道：缓存/页表计时窥探 TA 访存模式（CacheQuote）；瞬态执行直接穿透 SGX
+      - 物理攻击不设防：TEE 不承诺抗探针/故障注入，高价值密钥仍需 SE
+      - 总线级物理攻击【2026前沿】：Battering RAM 等低成本内存总线中间人攻击威胁机密计算
+      - 防护方向：TEE OS 加固与模糊测试、恒定时间 TA、AEX-Notify 等微码缓解、TEE+SE 组合
+  - 处理器微架构安全【考纲领域5】：掌握幽灵与熔断的基础概念和攻击技术
+    - 预备知识：为什么缓存会泄密
+      - 乱序执行与推测执行：提前执行预测路径，预测错误时回滚架构状态，但缓存等微架构状态不回滚
+      - 缓存时序信道：命中几周期、未命中几百周期，时间差就是信息信道
+      - 缓存探测原语【高频考点】
+        - Flush+Reload：clflush 清行→victim 执行→重载测时；需与 victim 共享内存页
+        - Prime+Probe：先填满缓存组→victim 执行→重访测时；无需共享内存、跨核可用
+        - Evict+Reload 与 Evict+Time：用竞争代替 flush 的变体
+    - Meltdown 熔断【高频考点】：CVE-2017-5754；"越权读"
+      - 原理：乱序窗口内越权数据已被取回并编码进缓存，权限检查在指令退休时才生效，痕迹已留
+      - 攻击流程：读内核地址触发异常→异常前乱序指令以该字节为索引访问数组→Flush+Reload 找出变快槽位，循环可任意读内核内存
+      - 缓解 KPTI：内核页表隔离（源于 KAISER），用户页表几乎不映射内核空间；代价是系统调用开销
+      - 影响面：Intel 广泛受影响、部分 ARM；AMD 因权限检查与数据访问并行化基本免疫
+    - Spectre 幽灵【高频考点】：CVE-2017-5753/5715；"骗执行"；论文结论是此类漏洞将长期存在
+      - v1 边界检查绕过：训练分支为合法后触发推测越界读；缓解为推测屏障（lfence、CSDB/SB）+索引掩码
+      - v2 分支目标注入：污染 BTB 让内核推测跳到攻击者 gadget；缓解 retpoline、微码 IBRS/IBPB/STIBP、硬件 eIBRS、ARM CSV2
+      - v4 推测存储绕过 SSB：推测忽略未就绪 store 读旧值；缓解 SSBD 微码开关
+      - 变体家族
+        - SpectreRSB：返回栈缓冲器
+        - L1TF/Foreshadow：PTE present=0 时 L1D 残留数据被推测读取，直击 SGX 与虚机
+        - MDS 家族：ZombieLoad/RIDL/Fallout，行填充与存储缓冲泄漏
+        - LVI：反向向飞地注入数据，需重编译缓解
+        - 中断注入攻击（2026）【2026前沿】：新型攻击绕过 Spectre v2 现有防御（Intel 与 AMD 均受影响）
+    - 缓解体系分层【高频考点】
+      - 硬件与微码：eIBRS、缓存/缓冲清零、L1D flush、CSV2/CSV3、分区缓存 CAT
+      - 操作系统：KPTI、KASLR 加固、按需禁用超线程
+      - 编译器与软件：retpoline、推测屏障、恒定时间编码、审计 secret 依赖访存
+      - TEE 与密码库：AEX-Notify、恒定时间实现、侧信道感知编程
+    - Rowhammer：相关但不同的内存攻击——属于故障注入类而非瞬态执行（易混淆考点）
+      - 原理：反复高频激活同一 DRAM 行，电荷泄漏致相邻行位翻转
+      - 利用方式：改写只读数据提权、翻转页表项、浏览器沙箱发起；RAMBLEED 用于读密钥、TRRespass 绕过 TRR
+      - 缓解：目标行刷新 TRR、提高刷新率、DDR5 ACT-RH 计数器、ECC 不彻底
+      - GPU 扩展（2026）【2026前沿】：GPUBreach 首次演示 GDDR6 Rowhammer 位翻转实现 CPU 提权
+    - 三大架构安全特性对照【高频考点】：RISC-V/ARM/x86 按"隔离、控制流、内存安全、推测缓解、加密指令、调试"六条线对比
+      - 内存隔离原语：RISC-V PMP/ePMP+CoVE；ARM TrustZone/RME；x86 特权环+SGX/TDX+SMAP/SMEP+MPK/PKS
+      - 控制流完整性：RISC-V Zicfilp/Zicfiss；ARM PAC 指针认证+BTI；x86 CET 影子栈+IBT
+      - 内存安全检测：ARM MTE 内存标签（v8.5）独有硬件检测 UAF/越界；CHERI 能力型架构为演进方向
+      - 推测执行缓解：ARM CSV2/CSV3 架构位；x86 eIBRS/IBPB/STIBP
+      - 加密指令扩展：RISC-V Zk（含 Zksed/Zksh 国密 SM4/SM3）；ARM Crypto Extensions+SVE；x86 AES-NI/SHA-NI
+      - 调试安全：RISC-V Debug Module；ARM CoreSight+ADAC 认证调试；x86 DCI 受控调试
+  - 硬件供应链安全【考纲领域6】：硬件木马与恶意植入等硬件层面攻击的概念
+    - 供应链威胁全景：供应链长、环节多、地域分散，每个环节都有对应威胁
+      - 设计环节：恶意员工后门、不可信第三方 IP（3PIP）携带木马；对策代码审计、形式化验证、可信 IP 库
+      - 制造环节：版图级修改植入木马、过量生产盗版；对策侧信道指纹检测、防克隆水印
+      - 封测环节：改换逆向芯片、坏料混入；对策来料检验、唯一 ID 追溯
+      - 运输分销环节：拦截改装植入、掉包仿冒；对策防拆封装、签封、入库 X-Ray
+      - 集成运维环节：固件被植后门、维修件替换；对策安全启动、固件签名、SBOM/HBOM
+    - 硬件木马 Hardware Trojan【高频考点】：设计与制造阶段植入的恶意电路，平时静默、条件触发后执行恶意功能
+      - 结构模型：触发器 Trigger + 载荷 Payload
+      - 触发器分类
+        - 组合逻辑触发：监视罕见内部信号组合（如特定密钥值），逻辑测试难发现
+        - 时序触发：计数器/状态机等待特定时间或事件
+        - 模拟物理触发：温度、电压、特定射频信号
+        - 混合触发：多条件与运算降低误触发
+      - 载荷分类
+        - 改功能：修改运算结果、绕过安全检查、降低随机数质量
+        - 泄密：把密钥调制到功耗/温度/射频旁路信号发射（侧信道式泄密）
+        - 破坏与降级：特定条件下失效 DoS
+        - 拆防护：关闭屏蔽层传感器、留调试后门
+      - 检测方法【高频考点】
+        - 功能逻辑测试：穷举或定向激励；触发条件极难覆盖
+        - 形式化验证：证明无不可达逻辑；状态爆炸需金标准
+        - 侧信道指纹：功耗电磁曲线与金片 golden chip 统计对比；工艺偏差干扰
+        - 结构对比与逆向：可信网表比对、逐层显微分析；成本高只能抽样
+        - 运行时监控：看门狗、性能计数器监测异常
+      - 公开资源：Trust-Hub 木马基准测试集、DARPA Trust in ICs 计划
+    - 硬件植入 Hardware Implant【高频考点】：出厂后通过物理接触附加或改装的恶意硬件（分立器件/微小电路板）
+      - 典型路径：物流拦截→开封加装微小器件→复原封装
+      - 公开案例
+        - The Big Hack（2018）：彭博称间谍芯片植入服务器主板；厂商否认、无独立证实，争议案例
+        - Weeping Angel：智能电视"伪关机窃听"固件（Vault7 披露）
+        - NSA ANT 目录：COTTONMOUTH 等 USB/网线级植入工具
+      - 木马与植入的区别【高频考点】：木马在芯片内部、设计制造阶段，靠侧信道指纹/形式化检测；植入是流片后物理附加物，靠来料检验/X-Ray/拆解
+    - 固件与软件供应链
+      - UEFI 固件 rootkit：LoJax（2018 首例野外）、MoonBounce（2022）、BlackLotus（2023 绕过 Secure Boot）；固件持久化重装无效
+      - 软件供应链投毒：SolarWinds/Sunburst（2020 构建系统投毒）、XcodeGhost、CCleaner
+      - 应对手段：固件签名+安全启动、SBOM/HBOM+VEX 通告、构建加固（SLSA/in-toto/Sigstore）
+    - 防护与保障体系
+      - 技术手段：安全启动、芯片唯一 ID 与产线密钥注入（secure provisioning）、防篡改封装签封、入库 X-Ray 与抽样逆向
+      - 管理手段：可信供应商认证审计、可信代工 Trusted Foundry、全生命周期追溯
+      - 法规框架：美 EO 14028 与 NIST SP 800-161（C-SCRM）、EU CRA、中国关基条例与 GB/T 36637
+  - 调试接口与系统级攻击【考纲领域7】：服务器等设备生产留下的 JTAG、UART 等高权限调试接口的攻击风险与管控
+    - JTAG【考纲重点】
+      - 定义：IEEE 1149.1 边界扫描标准（1990），现泛指片上调试/烧写通道
+      - 信号与机制：TCK/TMS/TDI/TDO/TRST 五根信号；TAP 控制器 16 状态机在 IR 指令与 DR 数据寄存器间移位；可 daisy-chain 串联；ARM 侧为 CoreSight DAP
+      - SWD：ARM 两线简化版串行调试
+      - 合法用途：PCB 互连测试（BSDL）、停核单步读写内存、烧写 Flash、FPGA 配置
+      - 攻击面【高频考点】
+        - 调试口未锁：停核读全内存提取密钥/生物模板、改写 RAM 代码、绕过 bootloader、关安全标志位
+        - 固件离线分析：dump 外部 Flash 后 binwalk 分析再回头利用
+        - 扫描链攻击：测试模式读扫描链可读出触发器状态（含运算中的密钥）；测试态必须与产品态隔离
+      - JTAG 防护【考纲重点】
+        - 熔断禁用：量产 eFuse 烧断调试口（需配套抗毛刺可靠熔断，防电压毛刺重开）
+        - 认证调试：保留调试口但需挑战-响应认证，如 ARM ADAC
+        - 生命周期管理：DEV→PROD→RMA 状态机；返修先擦密钥再授权调试
+        - 隔离与混淆：调试引脚断线/复用、扫描链安全模式
+        - 协议升级：IEEE 1149.7 两线 cJTAG 自带安全特性
+    - UART 调试口【考纲重点】
+      - 特征与识别：TX/RX/GND 三线，常见 115200 8N1；PCB 上 4 针排（VCC/TX/RX/GND），万用表+逻辑分析仪定位
+      - 攻击方式【高频考点】
+        - 读启动日志：了解 bootloader 与内核配置、发现调试后门
+        - U-Boot autoboot 打断：倒计时内按键进命令行，setenv 改 bootargs（init=/bin/sh 拿 root）、tftpboot 加载任意内核、关安全启动开关
+        - 无认证控制台：Linux console 未设认证直接得 root shell（路由器/机顶盒常见）
+      - 防护：量产关闭串口控制台（quiet/loglevel=0）、U-Boot 密码与锁定 autoboot、裁剪命令集、串口认证
+    - 其他物理入口与完整攻击链
+      - SPI Flash：SOIC8 夹具+flashrom 直接 dump/篡改固件回刷；防护全链验签、固件加密、写保护 WP
+      - eMMC chip-off：拆片读数据、boot 引脚强制进编程模式；防护存储加密、BOOT 引脚锁定
+      - USB DFU 恢复模式：强制刷机降级/刷恶意镜像；防护版本单调+全链验签
+      - Boot ROM 漏洞：不可修补——Apple checkm8 堆溢出、Switch Fusée Gelée USB RCM 栈溢出；只能限制利用面
+      - 毛刺打验签：电压/时钟毛刺打 BootROM 签名比较分支跳过校验；防护双路冗余/传感器
+      - 冷启动攻击：断电冷却读 DRAM 残留密钥；防护开机内存清零、加密内存、密封
+    - IoT 设备攻击方法论：系统级视角的标准流程
+      - 拆解观察：找调试口（4 针排、TX/RX/JTAG 焊盘）与 Flash 型号
+      - 调试口探测：波特率扫描、JTAGulator 定位
+      - 固件提取与分析：调试口或 Flash 夹具 dump → binwalk 解析文件系统/密钥/硬编码口令
+      - 漏洞利用：改 bootargs、刷固件、毛刺绕验签
+      - 持久化与横向
+    - 底软漏洞挖掘：BootROM、bootloader、UEFI、BMC、内核驱动、RTOS、基带等底层软件安全
+      - 底层软件攻击面【高频考点】
+        - BootROM 与 Bootloader：出厂固化不可修补；镜像解析缺陷绕验签
+        - UEFI 与 SMM：SMM callout、指向 SMRAM 的 DMA、变量服务溢出、固件卷解析漏洞
+        - BMC 管理通道：IPMI 弱认证、BMC 固件被植（服务器带外后门）
+        - 内核与驱动：ioctl 参数校验缺失、DMA 缓冲管理不当（无 IOMMU 即 DMA 攻击）
+        - TEE TA 与系统调用：TA 内存破坏升级为 TEE 内提权
+        - 基带与无线协议栈：空口远程可达，手机暴露面最大（Pwn2Own Mute）
+      - 常见漏洞原理
+        - 内存破坏漏洞：栈堆溢出、UAF/Double-Free、整型溢出、类型混淆；底软常缺 ASLR 利用门槛更低
+        - Double-fetch 竞态：共享内存检查与使用之间被并发改写（TOCTOU）；Bochspwn 检测方法
+      - 挖掘技术
+        - 覆盖率引导模糊测试：AFL++/libFuzzer；固件全系统仿真 FirmAE/Firmadyne+Firm-AFL；硬件辅助覆盖 CoreSight ETM/Intel PT；TEE 专用 Percival
+        - 符号执行与静态分析：angr/S2E/KLEE；CodeQL/Coverity 污点分析；CERT C/MISRA 审计
+        - 补丁比对与差分测试：BinDiff 反推 1-day；协议实现差分
+        - AI 辅助挖掘【2026前沿】：LLM 辅助 harness 生成、崩溃分诊与代码审计
+      - 缓解与安全开发
+        - 运行时缓解：ASLR、DEP/NX、Stack Canary、CFI——底软缺省关闭本身就是最大问题
+        - 硬件缓解：ARM PAC/BTI/MTE、x86 CET、IOMMU 堵 DMA 攻击、SMM 加固（SMRAM 锁定+DMA 保护）
+        - 流程与工具：sanitizers 进 CI、持续模糊、CVE 情报监控、固件全链签名防降级
+      - 接口能力对应速记【高频考点】：JTAG=芯片级完全控制；UART=shell/bootargs 级控制；SPI Flash=固件级 dump 篡改
+  - 业界生态与实践【拓展】：业界主流硬件安全架构与产品、垂直行业方案、华为实践；面试与理解概念落点有用
+    - 处理器内置安全架构【高频考点】
+      - Intel：CSME 管理引擎+PTT（fTPM）、Boot Guard（熔丝锚定公钥哈希校验 BIOS）、DCI 调试
+      - AMD：PSP 平台安全协处理器、SEV 家族、新平台集成 Pluton
+      - Microsoft Pluton：CPU 裸片内安全处理器，定位替代离散 TPM，Windows Update 统一升级固件
+      - Apple SEP：独立安全协处理器自带 Boot ROM 与 AES 引擎；生物特征与支付密钥不出 SEP
+      - Google Titan M/M2：M2 基于开源 OpenTitan；Weaver 锁屏节流、Verified Boot 状态、密钥 attestation、DICE 身份
+      - Qualcomm SPU：Snapdragon 安全处理单元，配合 QSEE
+      - Samsung Knox Vault：独立抗物理攻击芯片（独立 PCB、传感器与存储）
+      - 共同特征清单【高频考点】：独立小核+独立存储+独立启动链+传感器防拆——判断是否为真独立安全芯片的标准
+    - 移动与桌面平台机制
+      - Android：AVB 2.0 逐级验签+rollback index、Keymaster→KeyMint、StrongBox（SE 支撑）、Gatekeeper/Weaver、RPMB 防重放分区、Widevine L1、FBE 文件加密
+      - iOS：Boot ROM→iBoot→内核逐级验签不可降级、SEP 承载生物特征、类密钥分级数据保护
+      - Windows：Win11 强制 Secure Boot+TPM 2.0、VBS/HVCI 内核完整性、Credential Guard、BitLocker TPM 密封、Secure Core 走 DRTM
+    - 云与数据中心
+      - AWS Nitro：Nitro Security Chip 硬件 RoT + Nitro Enclaves + NitroTPM
+      - Google Cloud：Confidential VM（SEV/TDX）、Confidential Space TEE 容器、Cloud HSM L3
+      - Azure：CVM（SEV-SNP/TDX）、Dedicated HSM、Azure Sphere IoT 平台（Pluton 思想发源）
+      - NVIDIA：H100/H200 Confidential Computing GPU TEE
+    - 开源 RoT 项目
+      - OpenTitan：lowRISC 托管开源硅可信根 SoC（Earl Grey），Pixel Titan M2 采用
+      - Caliptra：OCP/CHIPS 联盟数据中心 SoC 片内 RoT 规范，可度量启动+DICE 身份
+      - TF-M 与 PSA：Cortex-M 物联网 TEE 参考实现与安全框架
+      - TF-A 与 Hafnium：EL3 Secure Monitor 固件与 S-EL2 安全世界虚拟化事实标准
+      - EDK2/coreboot/U-Boot：UEFI 固件与开源 bootloader 研究载体
+      - Keystone 与 CHERI：RISC-V enclave 框架；CHERI 能力型内存安全架构（Morello 原型）
+    - 垂直行业方案
+      - 汽车电子：HIS SHE（MCU 内置 AES 模块）→EVITA HSM 三级；AUTOSAR CSM；ISO/SAE 21434+UNECE R155/R156 法规体系
+      - 支付金融：EMV/PBOC、POS 终端 PCI PTS 认证、金融 HSM 三巨头（Thales/Utimaco/nShield）、支付令牌化
+      - IoT 与嵌入式：预认证 SE（ATECC608/SE050/STSAFE）、eSIM+GSMA RSP、MCUboot+TF-M 底座、Ascon 轻量密码
+      - 身份与在线认证：FIDO2/WebAuthn+CTAP 免密、硬件安全密钥内置 SE、ePassport（ICAO BAC/PACE）、Titan Key 蓝牙缺陷召回
+    - 经典案例速览【高频考点】
+      - SIMjacker（2019）：特制 SMS 利用 SIM 卡 S@T 浏览器执行指令
+      - Starbleed（2020）：Xilinx 7 系 FPGA 比特流加密被破，BootROM 缺陷无法修补
+      - Jeep Cherokee（2015）：蜂窝远程控车召回 140 万辆，催生 R155/R156
+      - RAMBLEED/Rowhammer：共享内存介质本身就是侧信道
+    - AI 算力安全【拓展】：岗位定向内容——把可信根、隔离、加密延伸到 GPU/NPU/HBM/互连
+      - 威胁模型：多租户互窃（GPU 微架构侧信道与数据残留）、恶意云管理员；资产为模型权重、训练数据、模型完整性
+      - 加速器可信基：NPU/GPU 安全启动与固件度量（昇腾、NVIDIA 内置 RoT）、GPU CC 显存加密+证明
+      - 多租户隔离：NVIDIA MIG 硬件切分 + 上下文切换缓存清理；L2 与共享 SRAM 残留是主要侧信道来源
+      - 互连与封装安全：chiplet/UCIe、NVLink/NVSwitch、CXL 的加密与认证——信任边界跟到互连
+      - 模型供应链：模型文件签名校验、权重 TEE 内运行时解密、反序列化投毒、模型水印溯源
+      - 隐私计算结合：FHE 密态推理（CKKS）、联邦学习+TEE 聚合+DP 噪声
+      - AI 辅助安全：LLM 辅助审计与 harness、机器学习侧信道分析（ASCAD）
+    - 安全 IP 与芯片生态
+      - SE 主流厂商：NXP、Infineon、ST、Microchip
+      - 安全 IP 供应商：Rambus CryptoManager、Synopsys DesignWare（并 Intrinsic ID PUF）、Cadence、Secure-IC
+      - 自研决策：买认证 IP 还是自研 RoT——认证常绑定已验证 IP，自研需自证安全
+    - 华为实践【高频考点】：端管云协同——以硬件可信根为起点使能安全启动，运行时 TEE 保护，密码内生国密
+      - 终端侧
+        - inSE 集成安全单元：金融级，承载 Huawei Pay 与 eID
+        - iTrustee TEE：自研微内核 TEE OS，跑指纹人脸比对、密钥运算、DRM
+        - 安全启动链：BootROM→Bootloader→内核逐级验签，密钥存隔离安全区域
+        - 星盾安全架构：HarmonyOS NEXT 系统级管控
+      - 服务器侧（鲲鹏）
+        - UEFI Secure Boot+TPM/TCM
+        - 机密虚机：基于 S-EL2 虚拟化与 virtCCA（对齐 ARM CCA）
+        - 内生国密：TEE 内置 SM2/SM3/SM4，REE 侧 SDF 标准接口免外置加密卡
+        - KAE 加速引擎：片内密码加速 SM2/SM3/SM4/AES/RSA，经 OpenSSL 引擎对接
+      - 云侧 DEW
+        - KMS/CSMS/KPS：密钥由 HSM 保护、主密钥不可导出
+        - DHSM 专属加密：国密局认证云密码机，满足密评合规
+        - 信封加密：CMK 保护 DEK、DEK 加密业务数据
+        - QingTian Enclave：ECS 虚机内再划隔离可信空间
+      - 开源与学术：蓬莱 Penglai（RISC-V TEE，IEEE S&P 2020/OSDI 2021）、openHiTLS（覆盖国密+NIST 首批 PQC）
+      - 标准与专利：GlobalPlatform/TCG/CCSA 参与；侧信道、TEE、启动、加速方向专利布局
+  - 标准认证与测评【拓展】：安全性必须通过标准化评估取信第三方；标准是体系化知识的最好大纲
+    - 通用安全评估 CC
+      - 标准依据：ISO/IEC 15408 Common Criteria
+      - 结构：PP 保护轮廓→ST 安全目标→TOE 评估对象
+      - EAL 保证级：EAL1~7；智能卡/SE 惯例 EAL4+/5+/6+
+      - AVA_VAN 漏洞分析深度【高频考点】：EAL 要与 AVA_VAN 一起看，智能卡普遍 AVA_VAN.5（高攻击潜力）
+      - 互认与机构：CCRA、SOG-IS 互认；SGS Brightsight、Riscure、UL、TÜV；国内 CCRC
+    - 密码模块认证
+      - FIPS 140-3：国际（ISO 19790，NIST CMVP），L1~L4；配套算法验证 CAVP/ACVP
+      - 中国商用密码认证【国密】：GM/T 0028 一至四级、商密检测中心检测、国密局认证；《商用密码管理条例》（2023）与密评 GB/T 39786
+    - 平台与 IoT 体系
+      - GlobalPlatform：TEE 规范族与 Internal API；SESIP 物联网平台评估（等级 1~3 按攻击者潜力）
+      - TCG：TPM（ISO/IEC 11889）；DICE/DPE 轻量级硬件身份派生（受限设备）
+      - PSA Certified：Arm 物联网安全框架，10 个安全目标；L1 问卷、L2 实验室、L3 含渗透测试
+    - 垂直行业标准
+      - 金融支付：EMVCo Security Evaluation、PCI PTS、PBOC/银联
+      - 汽车：ISO/SAE 21434 网络安全工程、UNECE R155（CSMS 车型准入强制）、R156（软件更新 SUMS）
+      - 工业控制：IEC 62443 分区/管道模型，安全等级 SL1~SL4
+      - 通信网络设备：3GPP SCAS + GSMA NESAS（5G 设备准入依据）
+      - 消费 IoT：ETSI EN 303 645 基线、EU RED DA（EN 18031）2025 年起强制
+      - 医疗：FDA 上市前网络安全指南，要求提交 SBOM
+    - 法规与供应链政策
+      - 欧盟：CRA 网络弹性法案（2024 生效）、RED DA、NIS2
+      - 美国：EO 14028、NIST SSDF（SP 800-218）、C-SCRM（SP 800-161）、SBOM（SPDX/CycloneDX）+VEX、SLSA/in-toto/Sigstore
+      - 中国：网安法、数安法、关基条例、等保 2.0（四级要求可信验证）、商密条例与密评
+    - 测评实操要点【高频考点】
+      - TRNG 随机数评估：SP 800-90B 熵源估计+在线健康测试、SP 800-22 统计套件、BSI AIS-31；"熵源+健康测试+DRBG"三层都要证据
+      - 侧信道评估流程：表征定位泄漏点→TVLA 泄漏评估（固定 vs 随机 Welch t 检验）→CPA 攻击验证；高阶掩码配高阶测试
+      - 故障注入评估：参数空间扫描（电压/时钟/电磁/激光位置能量）、定义目标函数、统计成功率、验证防护响应 fail-closed
+      - 算法符合性测试：KAT 已知答案测试、边界异常输入、协议互操作
+      - 送检流程：送样→文档评审→测试→整改→报告→证书；研发侧先做预扫描（ChipWhisperer 自测）
+    - 评估对象与标准对应【高频考点】
+      - 安全芯片/智能卡：CC + JIL 攻击方法，EAL4+/5+/6+ 与 AVA_VAN
+      - 密码模块/HSM：FIPS 140-3 与 GM/T 0028，L1~L4
+      - TEE：GlobalPlatform TEE 认证
+      - IoT 平台/MCU：SESIP 与 PSA Certified
+      - POS 终端：PCI PTS、EMVCo
+      - 汽车：ISO/SAE 21434、UNECE R155/R156
+      - 工控：IEC 62443
+      - 5G 网络设备：NESAS + 3GPP SCAS
+  - 学习资源与工具【拓展】：从应试走向体系化掌握的地图
+    - 学术版图
+      - 顶会顶刊
+        - TCHES：IACR 密码硬件顶刊（CHES 并入），DPA/掩码/故障注入/PUF 首选阵地
+        - HOST：硬件木马检测、RoT 架构、供应链
+        - IEEE S&P：Meltdown/Spectre 首发地
+        - USENIX Security/CCS/NDSS：TEE 攻防、固件、模糊测试
+        - DAC/DATE/ICCAD：设计自动化界安全专题，Hack@DAC 攻防赛
+      - 代表机构：KU Leuven COSIC（格密码与侧信道）、波鸿 HGI（CHES 创始）、TU Graz（Rowhammer/Meltdown）、Weizmann、中科院软件所（蓬莱）、上交 LoCCS
+    - 数据集与竞赛
+      - DPA Contest v1~v5：公开功耗数据集，侧信道入门练手
+      - ASCAD：掩码 AES 深度学习侧信道数据集
+      - Trust-Hub：硬件木马基准电路
+      - NIST 算法竞赛：AES→SHA-3→CAESAR→PQC→LWC（Ascon）
+      - Pwn2Own：浏览器/基带/汽车/SoC 真实目标攻破赛
+    - 教材与课程：Anderson《Security Engineering》、Aumasson《Serious Cryptography》、Mukhopadhyay《Hardware Security》、沈昌祥可信计算 3.0、Coursera Maryland 硬件安全、MIT 6.858
+    - 开源工具速查【高频考点】
+      - ChipWhisperer：开源侧信道采集+时钟电压毛刺一体化，入门实操首选
+      - ChipSEC：Intel 发起的开源平台/UEFI 安全评估框架
+      - Riscure Inspector：商用侧信道/故障注入平台（评估机构标配）
+      - flashrom + SOIC8 夹具：SPI Flash 读写，固件 dump 第一步
+      - binwalk + Ghidra/IDA：固件提取与逆向分析
+      - JTAGulator/Bus Pirate/Flipper Zero：调试口发现与总线探测
+      - Proxmark3：RFID/NFC 安全研究
+      - OP-TEE on QEMU：无硬件运行完整 TEE 软件栈
+      - Yosys + nextpnr：开源 FPGA 综合，自定义 RoT 原型验证
+    - 学习路线（0~12 个月）
+      - 阶段 0 打基础：密码学概念+体系结构（流水线/缓存/乱序）+Verilog
+      - 阶段 1 动手入门（1~3 月）：ChipWhisperer 跑 CPA 与毛刺、拆旧设备玩 UART/JTAG/SPI、binwalk 分析固件
+      - 阶段 2 体系化（3~6 月）：精读讲义与 GP/SESIP/PSA 原文、FIPS 140-3 与 GM/T 0028 对照、读 OP-TEE/OpenTitan 源码
+      - 阶段 3 深钻（6~12 月）：选方向专长——PQC 硬件加速（NTT）、CCA 机密计算、微架构安全、侧信道评估方法学
