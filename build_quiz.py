@@ -1,21 +1,34 @@
 #!/usr/bin/env python3
-"""从 硬件安全题库.csv 生成单文件刷题网页 硬件安全刷题.html"""
-import csv, json, html
+"""从硬件安全题库 CSV 生成单文件刷题网页。"""
+import argparse, csv, json, html
 
-CSV = "硬件安全题库.csv"
-OUT = "quiz/index.html"
+parser = argparse.ArgumentParser(description="从题库 CSV 生成单文件刷题网页")
+parser.add_argument("--csv", default=None, help="单一题库 CSV 路径（兼容参数）")
+parser.add_argument("--bank", action="append", default=[], metavar="名称=路径", help="添加题库，例如：--bank '核心题库=硬件安全题库2.csv'")
+parser.add_argument("--out", default="quiz/index.html", help="输出 HTML 路径")
+args = parser.parse_args()
+OUT = args.out
 
-questions = []
-with open(CSV, encoding="utf-8-sig") as f:
-    for r in csv.DictReader(f):
-        questions.append({
-            "id": r["题号"], "type": r["题型"], "domain": r["知识域"],
-            "diff": r["难度"], "stem": r["题干"],
-            "opts": [r["选项A"], r["选项B"], r["选项C"], r["选项D"]],
-            "ans": r["答案"], "exp": r["解析"], "tag": r["考点"],
-        })
+bank_args = args.bank or ([f"硬件安全题库2={args.csv}"] if args.csv else ["硬件安全题库2=硬件安全题库2.csv"])
+banks = {}
+for item in bank_args:
+    if "=" not in item:
+        parser.error(f"题库参数必须是“名称=路径”：{item}")
+    name, path = item.split("=", 1)
+    if not name or not path or name in banks:
+        parser.error(f"题库名称必须唯一且路径非空：{item}")
+    questions = []
+    with open(path, encoding="utf-8-sig") as f:
+        for r in csv.DictReader(f):
+            questions.append({
+                "id": r["题号"], "type": r["题型"], "domain": r["知识域"],
+                "diff": r["难度"], "stem": r["题干"],
+                "opts": [r.get(f"选项{letter}", "") for letter in "ABCDEFG"],
+                "ans": r["答案"], "exp": r["解析"], "tag": r["考点"],
+            })
+    banks[name] = {"questions": questions}
 
-data_js = json.dumps(questions, ensure_ascii=False)
+data_js = json.dumps(banks, ensure_ascii=False)
 
 page = """<!DOCTYPE html>
 <html lang="zh">
@@ -79,12 +92,13 @@ main { max-width:760px; margin:20px auto; padding:0 16px; }
     <span>答对 <b id="stCorrect">0</b></span>
     <span>正确率 <b id="stRate">–</b></span>
     <span>模拟得分 <b id="stScore">0</b> 分</span>
-    <span>已刷 <b id="stSeen">0</b>/<b id="stTotal">126</b> 题</span>
+    <span>已刷 <b id="stSeen">0</b>/<b id="stTotal">__TOTAL__</b> 题</span>
     <span>错题本 <b id="stWrong">0</b></span>
     <button id="themeBtn" title="切换深色 / 浅色（默认跟随系统）">☾ 深色</button>
   </div>
 </header>
 <div id="controls">
+  <select id="bank" aria-label="选择题库"></select>
   <select id="mode">
     <option value="rand" selected>随机刷题（优先新题）</option>
     <option value="seq">顺序刷题</option>
@@ -92,7 +106,7 @@ main { max-width:760px; margin:20px auto; padding:0 16px; }
   </select>
   <select id="domain"><option value="">全部知识域</option></select>
   <select id="qtype"><option value="">全部题型</option><option>单选</option><option>多选</option></select>
-  <select id="diff"><option value="">全部难度</option><option>基础</option><option>进阶</option><option>挑战</option></select>
+  <select id="diff"><option value="">全部层级</option><option>核心</option><option>扩展</option></select>
   <button id="startBtn" class="primary">开始 / 重置</button>
   <button id="clearSeen" class="ghost">清空刷题记录</button>
   <button id="clearWrong" class="ghost">清空错题本</button>
@@ -115,22 +129,23 @@ main { max-width:760px; margin:20px auto; padding:0 16px; }
   <div id="summary" class="card" style="display:none"></div>
 </main>
 <script>
-const QUESTIONS = __DATA__;
-const KEY_WRONG = "hwsec_wrong_v1";
-const KEY_SEEN = "hwsec_seen_v1";
+const BANKS = __DATA__;
 const $ = id => document.getElementById(id);
-let wrongBook = new Set(JSON.parse(localStorage.getItem(KEY_WRONG) || "[]"));
-let seen = new Set(JSON.parse(localStorage.getItem(KEY_SEEN) || "[]"));
+let bankKey = Object.keys(BANKS)[0];
+let QUESTIONS = BANKS[bankKey].questions;
+let wrongBook = new Set();
+let seen = new Set();
 let queue = [], idx = 0, picked = new Set(), submitted = false;
 let stats = { answered: 0, correct: 0, score: 0 };
 let mode = "seq";
 
+function storageKey(kind) { return "hwsec_" + kind + "_v2_" + bankKey; }
 function saveWrong() {
-  localStorage.setItem(KEY_WRONG, JSON.stringify([...wrongBook]));
+  localStorage.setItem(storageKey("wrong"), JSON.stringify([...wrongBook]));
   $("stWrong").textContent = wrongBook.size;
 }
 function saveSeen() {
-  localStorage.setItem(KEY_SEEN, JSON.stringify([...seen]));
+  localStorage.setItem(storageKey("seen"), JSON.stringify([...seen]));
   $("stSeen").textContent = seen.size;
   $("stTotal").textContent = QUESTIONS.length;
 }
@@ -139,6 +154,23 @@ function renderStats() {
   $("stCorrect").textContent = stats.correct;
   $("stRate").textContent = stats.answered ? Math.round(stats.correct / stats.answered * 100) + "%" : "–";
   $("stScore").textContent = stats.score;
+}
+function refreshFilters() {
+  const selectedDomain = $("domain").value;
+  const domains = [...new Set(QUESTIONS.map(q => q.domain))].sort();
+  $("domain").innerHTML = '<option value="">全部知识域</option>';
+  domains.forEach(d => {
+    const o = document.createElement("option");
+    o.value = d; o.textContent = d; $("domain").appendChild(o);
+  });
+  if (domains.includes(selectedDomain)) $("domain").value = selectedDomain;
+}
+function selectBank() {
+  bankKey = $("bank").value;
+  QUESTIONS = BANKS[bankKey].questions;
+  wrongBook = new Set(JSON.parse(localStorage.getItem(storageKey("wrong")) || "[]"));
+  seen = new Set(JSON.parse(localStorage.getItem(storageKey("seen")) || "[]"));
+  refreshFilters(); saveWrong(); saveSeen(); start();
 }
 function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
 function buildPool() {
@@ -182,10 +214,11 @@ function render() {
   $("stem").textContent = q.stem;
   const box = $("opts");
   box.innerHTML = "";
-  "ABCD".split("").forEach((L, i) => {
+  q.opts.filter(Boolean).forEach((opt, i) => {
+    const L = String.fromCharCode(65 + i);
     const b = document.createElement("button");
     b.className = "opt"; b.dataset.letter = L;
-    b.innerHTML = "<span class='letter'>" + L + ".</span>" + q.opts[i];
+    b.innerHTML = "<span class='letter'>" + L + ".</span>" + opt;
     b.onclick = () => pick(L, b);
     box.appendChild(b);
   });
@@ -280,9 +313,16 @@ $("themeBtn").onclick = () => {
 };
 window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", updateThemeBtn);
 (function init() {
-  const domains = [...new Set(QUESTIONS.map(q => q.domain))].sort();
-  const sel = $("domain");
-  domains.forEach(d => { const o = document.createElement("option"); o.textContent = d; sel.appendChild(o); });
+  const selector = $("bank");
+  Object.keys(BANKS).forEach(name => {
+    const option = document.createElement("option");
+    option.value = name; option.textContent = name; selector.appendChild(option);
+  });
+  selector.value = bankKey;
+  selector.onchange = selectBank;
+  refreshFilters();
+  wrongBook = new Set(JSON.parse(localStorage.getItem(storageKey("wrong")) || "[]"));
+  seen = new Set(JSON.parse(localStorage.getItem(storageKey("seen")) || "[]"));
   saveWrong(); saveSeen(); start(); updateThemeBtn();
 })();
 </script>
@@ -290,7 +330,9 @@ window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", upd
 </html>
 """
 
-out = page.replace("__DATA__", data_js)
+total = sum(len(bank["questions"]) for bank in banks.values())
+initial_total = len(next(iter(banks.values()))["questions"])
+out = page.replace("__DATA__", data_js).replace("__TOTAL__", str(initial_total))
 with open(OUT, "w", encoding="utf-8") as f:
     f.write(out)
-print("生成", OUT, "题数:", len(questions), "大小:", len(out.encode("utf-8")), "字节")
+print("生成", OUT, "题库:", len(banks), "题数:", total, "大小:", len(out.encode("utf-8")), "字节")
