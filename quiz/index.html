@@ -1,368 +1,51 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="zh-CN">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ffffff" id="themeColor">
 <title>硬件安全刷题</title>
-<script>(function(){var t=null;try{t=localStorage.getItem("theme")}catch(e){}if(!t)t=window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";document.documentElement.dataset.theme=t;})();</script>
+<script>(function(){var t=null;try{t=localStorage.getItem("theme")}catch(e){}if(t)document.documentElement.dataset.theme=t})();</script>
 <style>
-:root { --accent:#C7000B; --accentT:#C7000B; --blue:#1F4E79; --bg:#f7f5f2; --card:#fff; --text:#222; --muted:#666; --line:#e3e0dc; --optbg:#fafaf8; --selbg:#eef4fa; --okbg:#eef8f0; --okline:#2e8b57; --badbg:#fdf0ef; --badgebg:#f0ece8; --badgetext:#666; --warnbg:#fff3e0; --warntext:#b26a00; color-scheme:light; }
-:root[data-theme="dark"] { --accent:#e5483d; --accentT:#ff6b60; --blue:#8ab8e8; --bg:#14161a; --card:#1d2026; --text:#d6d3cd; --muted:#9a968f; --line:#34383f; --optbg:#23262c; --selbg:#20304a; --okbg:#1d3226; --okline:#4caf7d; --badbg:#3a2020; --badgebg:#2a2d33; --badgetext:#9a968f; --warnbg:#382c16; --warntext:#d8a04a; color-scheme:dark; }
-* { box-sizing:border-box; }
-body { margin:0; font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif; background:var(--bg); color:var(--text); }
-header { position:relative; background:var(--card); border-bottom:3px solid var(--accent); padding:14px 20px; }
-h1 { margin:0 0 8px; font-size:20px; color:var(--accentT); }
-#themeBtn { position:absolute; top:14px; right:20px; font-size:12px; padding:5px 12px; border:1px solid var(--line); border-radius:14px; background:var(--optbg); color:var(--text); cursor:pointer; }
-#stats { font-size:13px; color:var(--muted); display:flex; gap:16px; flex-wrap:wrap; }
-#stats b { color:var(--blue); }
-#controls { display:flex; gap:10px; flex-wrap:wrap; align-items:center; padding:12px 20px; background:var(--card); border-bottom:1px solid var(--line); }
-#controls select, #controls button { font-size:13px; padding:6px 10px; border:1px solid var(--line); border-radius:6px; background:var(--card); color:var(--text); }
-#controls button { cursor:pointer; }
-#controls .primary { background:var(--accent); color:#fff; border-color:var(--accent); }
-#controls .ghost { color:var(--muted); border:none; background:none; text-decoration:underline; }
-main { max-width:760px; margin:20px auto; padding:0 16px; }
-.card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:18px 20px; box-shadow:0 1px 3px rgba(0,0,0,.08); }
-.badges { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px; }
-.badge { font-size:12px; padding:2px 8px; border-radius:10px; background:var(--badgebg); color:var(--badgetext); }
-.badge.type { background:var(--badgebg); color:var(--accentT); font-weight:600; }
-.badge.diff-挑战 { background:var(--warnbg); color:var(--warntext); }
-#pos { font-size:12px; color:var(--muted); margin-bottom:6px; }
-#stem { font-size:16px; line-height:1.6; margin:0 0 14px; font-weight:600; }
-.opt { display:block; width:100%; text-align:left; margin:8px 0; padding:10px 12px; border:1.5px solid var(--line); border-radius:8px; background:var(--optbg); color:var(--text); font-size:14.5px; line-height:1.5; cursor:pointer; }
-.opt:hover { border-color:var(--muted); }
-.opt.sel { border-color:var(--blue); background:var(--selbg); }
-.opt.right { border-color:var(--okline); background:var(--okbg); }
-.opt.wrongpick { border-color:var(--accent); background:var(--badbg); }
-.opt.disabled { cursor:default; }
-.letter { font-weight:700; margin-right:6px; color:var(--blue); }
-#feedback { margin-top:14px; padding:12px 14px; border-radius:8px; font-size:14px; line-height:1.7; display:none; }
-#feedback.ok { background:var(--okbg); border-left:4px solid var(--okline); }
-#feedback.bad { background:var(--badbg); border-left:4px solid var(--accent); }
-#feedback .verdict { font-weight:700; }
-#exp { margin-top:8px; color:var(--text); }
-#nav { display:flex; gap:10px; margin-top:16px; }
-#nav button { font-size:14px; padding:9px 22px; border-radius:8px; border:none; cursor:pointer; }
-#submit { background:var(--blue); color:#fff; }
-#next { background:var(--accent); color:#fff; }
-#summary { text-align:center; padding:34px 20px; }
-#summary h2 { color:var(--accentT); }
-#summary .nums { font-size:15px; line-height:2; color:var(--text); }
-#summary button { margin:8px; font-size:14px; padding:9px 20px; border:none; border-radius:8px; background:var(--blue); color:#fff; cursor:pointer; }
-#summary button.red { background:var(--accent); }
-.hint { font-size:12px; color:var(--muted); margin-top:10px; }
+:root{--accent:#c7000b;--blue:#1f4e79;--bg:#f6f5f3;--card:#fff;--text:#222;--muted:#6d6a66;--line:#e4e1dd;--soft:#f1efec;--optbg:#fcfbfa;--selbg:#edf4fa;--okbg:#edf8f0;--okline:#2e8b57;--badbg:#fdf0ef;--warnbg:#fff3e0;--warntext:#9a5900;--shadow:0 2px 10px rgba(20,20,20,.06);color-scheme:light}
+:root[data-theme="dark"]{--accent:#f05a50;--blue:#8ab8e8;--bg:#14161a;--card:#1d2026;--text:#e1ded8;--muted:#aaa59d;--line:#363a42;--soft:#292c32;--optbg:#23262c;--selbg:#20304a;--okbg:#1d3226;--okline:#55bd86;--badbg:#3a2020;--warnbg:#382c16;--warntext:#e0ab53;--shadow:0 2px 12px rgba(0,0,0,.2);color-scheme:dark}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;min-width:320px;min-height:100vh;min-height:100dvh;font-family:"PingFang SC","Microsoft YaHei",system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);-webkit-text-size-adjust:100%}button,select{font:inherit}button{-webkit-tap-highlight-color:transparent}
+.topbar{position:sticky;top:0;z-index:20;background:var(--card);border-bottom:1px solid var(--line);padding:max(10px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) 9px max(16px,env(safe-area-inset-left))}.topbar-main{max-width:720px;margin:0 auto;display:flex;align-items:center;gap:12px}.brand{min-width:0;flex:1}h1{margin:0;color:var(--accent);font-size:19px;line-height:1.3;letter-spacing:.01em}#modeSummary{margin-top:2px;color:var(--muted);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#settingsBtn{flex:none;min-height:40px;padding:7px 12px;border:1px solid var(--line);border-radius:20px;color:var(--text);background:var(--optbg);cursor:pointer}.session-line{max-width:720px;margin:8px auto 0;display:flex;align-items:center;justify-content:space-between;gap:12px;color:var(--muted);font-size:12px}.session-line b{color:var(--blue);font-weight:650}.progress-track{max-width:720px;height:3px;margin:7px auto 0;overflow:hidden;border-radius:2px;background:var(--soft)}#progressFill{width:0;height:100%;background:var(--accent);transition:width .2s ease}
+main{width:100%;max-width:720px;margin:16px auto;padding:0 16px calc(24px + env(safe-area-inset-bottom))}.card{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow)}#questionCard{padding:20px;scroll-margin-top:94px}.question-meta{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}#pos{color:var(--muted);font-size:13px;font-variant-numeric:tabular-nums}.badge{display:inline-flex;align-items:center;min-height:24px;padding:2px 9px;border-radius:12px;background:var(--soft);color:var(--muted);font-size:12px}.badge.type{color:var(--accent);font-weight:700}.badges{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px}.badge.diff-挑战{background:var(--warnbg);color:var(--warntext)}#stem{margin:0 0 16px;font-size:18px;line-height:1.65;font-weight:650;overflow-wrap:anywhere}
+.opt{display:flex;align-items:flex-start;gap:11px;width:100%;min-height:52px;margin:10px 0;padding:13px 14px;border:1.5px solid var(--line);border-radius:11px;background:var(--optbg);color:var(--text);text-align:left;font-size:16px;line-height:1.55;cursor:pointer;transition:border-color .12s,background .12s,transform .08s}.opt:active:not(.disabled){transform:scale(.995)}.opt:hover:not(.disabled){border-color:var(--muted)}.opt.sel{border-color:var(--blue);background:var(--selbg)}.opt.right{border-color:var(--okline);background:var(--okbg)}.opt.wrongpick{border-color:var(--accent);background:var(--badbg)}.opt.disabled{cursor:default}.choice-mark{flex:0 0 22px;width:22px;height:22px;margin-top:1px;border:1.5px solid var(--muted);border-radius:6px;display:grid;place-items:center;color:#fff;font-size:14px;line-height:1}.opt.single .choice-mark{border-radius:50%}.opt.sel .choice-mark{border-color:var(--blue);background:var(--blue)}.opt.sel .choice-mark::after{content:"✓";font-weight:800}.opt.single.sel .choice-mark::after{content:"";width:8px;height:8px;border-radius:50%;background:#fff}.opt.right .choice-mark{border-color:var(--okline);background:var(--okline)}.opt.right .choice-mark::after{content:"✓";font-weight:800}.opt.wrongpick .choice-mark{border-color:var(--accent);background:var(--accent)}.opt.wrongpick .choice-mark::after{content:"×";font-weight:800;font-size:18px}.option-copy{flex:1;min-width:0;overflow-wrap:anywhere}.letter{display:none;margin-right:5px;color:var(--blue);font-weight:750}.submitted .letter{display:inline}
+#actionBar{display:flex;justify-content:center;margin:18px 0 2px}#actionBar button{min-width:148px;min-height:46px;padding:10px 24px;border:0;border-radius:10px;background:var(--blue);color:#fff;font-weight:650;cursor:pointer}#actionBar button:disabled{opacity:.42;cursor:not-allowed}#nextBtn{background:var(--accent)!important}#feedback{display:none;margin-top:18px;border-top:1px solid var(--line);padding-top:18px}.result-box{padding:13px 14px;border-radius:10px;line-height:1.55}.result-box.ok{background:var(--okbg);border-left:4px solid var(--okline)}.result-box.bad{background:var(--badbg);border-left:4px solid var(--accent)}.verdict{font-weight:750}.answer-line{margin-top:4px;color:var(--muted);font-size:14px}.explanation{margin-top:18px}.explanation h2{margin:0 0 8px;font-size:15px}.explanation p{margin:0;font-size:15px;line-height:1.8;white-space:pre-wrap;overflow-wrap:anywhere}.knowledge{display:flex;align-items:flex-start;gap:8px;margin-top:14px;color:var(--muted);font-size:13px;line-height:1.6}.knowledge strong{flex:none;color:var(--text)}
+#summary{display:none;padding:30px 20px;text-align:center}#summary h2{margin:0 0 12px;color:var(--accent);font-size:21px}#summary .nums{color:var(--text);font-size:15px;line-height:2}.summary-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:18px}.summary-actions button{min-height:44px;padding:9px 18px;border:0;border-radius:9px;background:var(--blue);color:#fff;cursor:pointer}.summary-actions button.red{background:var(--accent)}
+.modal{position:fixed;inset:0;z-index:100;display:none;align-items:center;justify-content:center;padding:20px}.modal.open{display:flex}.modal-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.46)}.settings-panel{position:relative;width:min(560px,100%);max-height:min(760px,calc(100dvh - 40px));overflow:auto;overscroll-behavior:contain;background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:0 18px 60px rgba(0,0,0,.25)}.settings-head{position:sticky;top:0;z-index:1;display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--line);background:var(--card)}.settings-head h2{margin:0;font-size:19px}#closeSettings{width:40px;height:40px;border:0;border-radius:50%;background:var(--soft);color:var(--text);font-size:22px;cursor:pointer}.settings-body{padding:4px 18px 20px}.settings-group{padding:16px 0;border-bottom:1px solid var(--line)}.settings-group:last-child{border-bottom:0}.settings-group h3{margin:0 0 12px;font-size:14px;color:var(--text)}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.field{min-width:0}.field.full{grid-column:1/-1}.field label{display:block;margin-bottom:6px;color:var(--muted);font-size:12px}.field select{width:100%;min-height:44px;padding:8px 34px 8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--optbg);color:var(--text);font-size:14px}.toggle-row{display:flex;align-items:center;justify-content:space-between;gap:18px;min-height:46px}.toggle-row+.toggle-row{border-top:1px solid var(--soft)}.toggle-copy strong{display:block;font-size:14px;font-weight:600}.toggle-copy small{display:block;margin-top:2px;color:var(--muted);font-size:11px;line-height:1.4}.switch{position:relative;flex:0 0 46px;width:46px;height:28px}.switch input{position:absolute;opacity:0;pointer-events:none}.switch span{position:absolute;inset:0;border-radius:14px;background:var(--line);cursor:pointer;transition:.15s}.switch span::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:.15s}.switch input:checked+span{background:var(--blue)}.switch input:checked+span::after{transform:translateX(18px)}.data-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:5px 0;color:var(--muted);font-size:13px}.danger-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}.danger-actions button{min-height:40px;padding:7px 11px;border:1px solid var(--line);border-radius:8px;background:var(--optbg);color:var(--accent);cursor:pointer}.keyboard-hint{margin:10px 0 0;color:var(--muted);font-size:12px;line-height:1.6}.settings-actions{position:sticky;bottom:0;display:flex;justify-content:flex-end;gap:10px;padding:13px 18px calc(13px + env(safe-area-inset-bottom));border-top:1px solid var(--line);background:var(--card)}.settings-actions button{min-height:44px;padding:9px 16px;border:1px solid var(--line);border-radius:9px;background:var(--optbg);color:var(--text);cursor:pointer}.settings-actions .primary{border-color:var(--accent);background:var(--accent);color:#fff}.settings-note{align-self:center;margin-right:auto;color:var(--muted);font-size:11px}body.modal-open{overflow:hidden}
+@media(max-width:480px){.topbar{padding-top:max(8px,env(safe-area-inset-top));padding-left:max(12px,env(safe-area-inset-left));padding-right:max(12px,env(safe-area-inset-right))}h1{font-size:18px}#settingsBtn{min-height:40px;padding:7px 11px}main{margin:12px auto;padding-left:12px;padding-right:12px}#questionCard{padding:16px 14px 18px;scroll-margin-top:90px}#stem{font-size:17px;line-height:1.65;margin-bottom:14px}.opt{min-height:52px;margin:9px 0;padding:13px 12px;font-size:16px;gap:10px}#actionBar{margin-top:16px}#actionBar button{width:min(190px,62%)}.modal{align-items:flex-end;padding:0}.settings-panel{width:100%;max-height:calc(100dvh - max(18px,env(safe-area-inset-top)));border-radius:18px 18px 0 0;border-bottom:0}.settings-body{padding-left:16px;padding-right:16px}.form-grid{grid-template-columns:1fr;gap:11px}.field.full{grid-column:auto}.settings-actions{padding-left:16px;padding-right:16px}.settings-note{display:none}}
+@media(max-width:350px){.session-line{gap:6px;font-size:11px}#questionCard{padding-left:12px;padding-right:12px}}
 </style>
 </head>
 <body>
-<header>
-  <h1>硬件安全刷题</h1>
-  <div id="stats">
-    <span>本次已答 <b id="stAnswered">0</b></span>
-    <span>答对 <b id="stCorrect">0</b></span>
-    <span>正确率 <b id="stRate">–</b></span>
-    <span>模拟得分 <b id="stScore">0</b> 分</span>
-    <span>已刷 <b id="stSeen">0</b>/<b id="stTotal">0</b> 题</span>
-    <span>错题本 <b id="stWrong">0</b></span>
-    <button id="themeBtn" title="切换深色 / 浅色（默认跟随系统）">☾ 深色</button>
-  </div>
-</header>
-<div id="controls">
-  <select id="bank" aria-label="选择题库"></select>
-  <select id="mode">
-    <option value="rand" selected>随机刷题（优先新题）</option>
-    <option value="seq">顺序刷题</option>
-    <option value="wrong">错题重刷</option>
-  </select>
-  <select id="domain"><option value="">全部知识域</option></select>
-  <select id="qtype"><option value="">全部题型</option><option>单选</option><option>多选</option></select>
-  <select id="diff"><option value="">全部层级</option><option>核心</option><option>扩展</option></select>
-  <button id="startBtn" class="primary">开始 / 重置</button>
-  <button id="clearSeen" class="ghost">清空刷题记录</button>
-  <button id="clearWrong" class="ghost">清空错题本</button>
-</div>
-<main>
-  <div id="quiz" style="display:none">
-    <div class="card">
-      <div id="pos"></div>
-      <div class="badges" id="badges"></div>
-      <p id="stem"></p>
-      <div id="opts"></div>
-      <div id="feedback"></div>
-      <div class="hint" id="hint"></div>
-    </div>
-    <div id="nav">
-      <button id="submitBtn">确认答案</button>
-      <button id="nextBtn" style="display:none">下一题</button>
-    </div>
-  </div>
-  <div id="summary" class="card" style="display:none"></div>
-</main>
+<header class="topbar"><div class="topbar-main"><div class="brand"><h1>硬件安全刷题</h1><div id="modeSummary">加载题库中…</div></div><button id="settingsBtn" type="button" aria-haspopup="dialog">⚙ 设置</button></div><div class="session-line"><span id="headerProgress">准备中</span><span>正确率 <b id="headerRate">–</b></span><span>错题 <b id="headerWrong">0</b></span></div><div class="progress-track"><div id="progressFill"></div></div></header>
+<main><section id="quiz" style="display:none"><article class="card" id="questionCard"><div class="question-meta"><div id="pos"></div><span class="badge type" id="typeBadge"></span></div><div class="badges" id="badges"></div><p id="stem"></p><div id="opts"></div><div id="actionBar"><button id="submitBtn" type="button" disabled>确认答案</button><button id="nextBtn" type="button" style="display:none">下一题</button></div><div id="feedback"></div></article></section><section id="summary" class="card"></section></main>
+<div class="modal" id="settingsModal" aria-hidden="true"><div class="modal-backdrop" id="settingsBackdrop"></div><section class="settings-panel" role="dialog" aria-modal="true" aria-labelledby="settingsTitle"><div class="settings-head"><h2 id="settingsTitle">刷题设置</h2><button id="closeSettings" type="button" aria-label="关闭设置">×</button></div><div class="settings-body"><div class="settings-group"><h3>刷题范围</h3><div class="form-grid"><div class="field full"><label for="bank">题库</label><select id="bank"></select></div><div class="field full"><label for="mode">刷题模式</label><select id="mode"><option value="rand">随机刷题（优先新题）</option><option value="seq">顺序刷题</option><option value="wrong">错题重刷</option></select></div><div class="field"><label for="domain">知识域</label><select id="domain"><option value="">全部知识域</option></select></div><div class="field"><label for="qtype">题型</label><select id="qtype"><option value="">全部题型</option><option>单选</option><option>多选</option></select></div><div class="field"><label for="diff">层级</label><select id="diff"><option value="">全部层级</option><option>核心</option><option>扩展</option></select></div><div class="field"><label for="themeChoice">主题</label><select id="themeChoice"><option value="system">跟随系统</option><option value="light">浅色</option><option value="dark">深色</option></select></div></div></div><div class="settings-group"><h3>答题偏好</h3><div class="toggle-row"><div class="toggle-copy"><strong>选项乱序</strong><small>每次出题随机排列，提交后显示原始字母</small></div><label class="switch"><input id="shuffleOptions" type="checkbox" checked><span></span></label></div><div class="toggle-row"><div class="toggle-copy"><strong>单选点击即判定</strong><small>关闭时可修改选择，再点击确认</small></div><label class="switch"><input id="singleInstant" type="checkbox"><span></span></label></div><div class="toggle-row"><div class="toggle-copy"><strong>答对后自动下一题</strong><small>短暂停留后继续；答错时仍显示解析</small></div><label class="switch"><input id="autoNext" type="checkbox"><span></span></label></div><p class="keyboard-hint">电脑快捷键：数字 1–7 选择，Enter 确认或进入下一题。</p></div><div class="settings-group"><h3>数据管理</h3><div class="data-row"><span>当前题库记录</span><span>已刷 <b id="settingsSeen">0</b> · 错题 <b id="settingsWrong">0</b></span></div><div class="danger-actions"><button id="clearSeen" type="button">清空刷题记录</button><button id="clearWrong" type="button">清空错题本</button></div></div></div><div class="settings-actions"><span class="settings-note">应用设置后将重新开始本轮</span><button id="cancelSettings" type="button">取消</button><button id="applySettings" class="primary" type="button">应用并重新开始</button></div></section></div>
 <script>
-// 题库不内嵌：启动时从 CSV 动态加载，列结构：题号/题型/知识域/难度/题干/选项A–G/答案/解析/考点
-const BANK_SOURCES = [
-  { name: "硬件安全题库2", file: "../硬件安全题库2.csv" },
-  { name: "硬件安全题库", file: "../硬件安全题库.csv" },
-];
-const BANKS = {};
-function parseCSV(text) {
-  if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1); // 去 UTF-8 BOM
-  const rows = [];
-  let row = [], field = "", inQuotes = false;
-  const endRow = () => {
-    row.push(field); field = "";
-    if (row.length > 1 || row[0] !== "") rows.push(row); // 跳过空行
-    row = [];
-  };
-  for (let i = 0; i < text.length; i++) {
-    const c = text[i];
-    if (inQuotes) {
-      if (c === '"') {
-        if (text[i + 1] === '"') { field += '"'; i++; }
-        else inQuotes = false;
-      } else field += c;
-    } else if (c === '"') inQuotes = true;
-    else if (c === ",") { row.push(field); field = ""; }
-    else if (c === "\r") { if (text[i + 1] === "\n") i++; endRow(); }
-    else if (c === "\n") endRow();
-    else field += c;
-  }
-  if (field !== "" || row.length > 0) endRow();
-  return rows;
-}
-function csvToQuestions(text) {
-  const rows = parseCSV(text);
-  const col = {};
-  rows[0].forEach((name, i) => { if (!(name in col)) col[name] = i; });
-  const get = (row, name) => col[name] != null && row[col[name]] != null ? row[col[name]] : "";
-  return rows.slice(1).map(row => ({
-    id: get(row, "题号"), type: get(row, "题型"), domain: get(row, "知识域"),
-    diff: get(row, "难度"), stem: get(row, "题干"),
-    opts: "ABCDEFG".split("").map(L => get(row, "选项" + L)),
-    ans: get(row, "答案"), exp: get(row, "解析"), tag: get(row, "考点"),
-  })).filter(q => q.id && q.stem);
-}
-async function loadBanks() {
-  for (const src of BANK_SOURCES) {
-    const res = await fetch(src.file, { cache: "no-cache" });
-    if (!res.ok) throw new Error("加载 " + src.file + " 失败（HTTP " + res.status + "）");
-    const questions = csvToQuestions(await res.text());
-    if (!questions.length) throw new Error("题库 " + src.name + " 未解析到题目（" + src.file + "）");
-    BANKS[src.name] = { questions };
-  }
-}
-const $ = id => document.getElementById(id);
-let bankKey = BANK_SOURCES[0].name;
-let QUESTIONS = [];
-let wrongBook = new Set();
-let seen = new Set();
-let queue = [], idx = 0, picked = new Set(), submitted = false;
-let stats = { answered: 0, correct: 0, score: 0 };
-let mode = "seq";
-let origToDisp = {};
-function storageKey(kind) { return "hwsec_" + kind + "_v2_" + bankKey; }
-function saveWrong() {
-  localStorage.setItem(storageKey("wrong"), JSON.stringify([...wrongBook]));
-  $("stWrong").textContent = wrongBook.size;
-}
-function saveSeen() {
-  localStorage.setItem(storageKey("seen"), JSON.stringify([...seen]));
-  $("stSeen").textContent = seen.size;
-  $("stTotal").textContent = QUESTIONS.length;
-}
-function renderStats() {
-  $("stAnswered").textContent = stats.answered;
-  $("stCorrect").textContent = stats.correct;
-  $("stRate").textContent = stats.answered ? Math.round(stats.correct / stats.answered * 100) + "%" : "–";
-  $("stScore").textContent = stats.score;
-}
-function refreshFilters() {
-  const selectedDomain = $("domain").value;
-  const domains = [...new Set(QUESTIONS.map(q => q.domain))].sort();
-  $("domain").innerHTML = '<option value="">全部知识域</option>';
-  domains.forEach(d => {
-    const o = document.createElement("option");
-    o.value = d; o.textContent = d; $("domain").appendChild(o);
-  });
-  if (domains.includes(selectedDomain)) $("domain").value = selectedDomain;
-}
-function selectBank() {
-  bankKey = $("bank").value;
-  QUESTIONS = BANKS[bankKey].questions;
-  wrongBook = new Set(JSON.parse(localStorage.getItem(storageKey("wrong")) || "[]"));
-  seen = new Set(JSON.parse(localStorage.getItem(storageKey("seen")) || "[]"));
-  refreshFilters(); saveWrong(); saveSeen(); start();
-}
-function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
-function buildPool() {
-  const domain = $("domain").value, qtype = $("qtype").value, diff = $("diff").value;
-  let pool = QUESTIONS.filter(q =>
-    (!domain || q.domain === domain) && (!qtype || q.type === qtype) && (!diff || q.diff === diff));
-  if (mode === "wrong") pool = pool.filter(q => wrongBook.has(q.id));
-  if (mode === "rand") {
-    shuffle(pool);
-    const fresh = pool.filter(q => !seen.has(q.id));
-    const done = pool.filter(q => seen.has(q.id));
-    pool = fresh.concat(done);
-  }
-  return pool;
-}
-function start() {
-  mode = $("mode").value;
-  queue = buildPool();
-  idx = 0; stats = { answered: 0, correct: 0, score: 0 };
-  renderStats();
-  $("summary").style.display = "none";
-  if (!queue.length) {
-    $("quiz").style.display = "none";
-    $("summary").style.display = "block";
-    $("summary").innerHTML = "<h2>没有符合条件的题目</h2><div class='nums'>" +
-      (mode === "wrong" ? "错题本是空的，先去刷题吧。" : "请调整筛选条件。") + "</div>";
-    return;
-  }
-  $("quiz").style.display = "block";
-  render();
-}
-function render() {
-  const q = queue[idx];
-  picked = new Set(); submitted = false;
-  $("pos").textContent = "第 " + (idx + 1) + " / " + queue.length + " 题";
-  $("badges").innerHTML =
-    "<span class='badge type'>" + q.type + "</span>" +
-    "<span class='badge'>" + q.domain + "</span>" +
-    "<span class='badge diff-" + q.diff + "'>" + q.diff + "</span>" +
-    "<span class='badge'>" + q.id + "</span>";
-  $("stem").textContent = q.stem;
-  const box = $("opts");
-  box.innerHTML = "";
-  const items = shuffle(q.opts.filter(Boolean).map((opt, i) => ({ opt, orig: String.fromCharCode(65 + i) })));
-  origToDisp = {};
-  items.forEach((it, i) => {
-    const L = String.fromCharCode(65 + i);
-    origToDisp[it.orig] = L;
-    const b = document.createElement("button");
-    b.className = "opt"; b.dataset.letter = L; b.dataset.orig = it.orig;
-    b.innerHTML = "<span class='letter'>" + L + ".</span>" + it.opt;
-    b.onclick = () => pick(it.orig, b);
-    box.appendChild(b);
-  });
-  $("feedback").style.display = "none";
-  $("submitBtn").style.display = q.type === "多选" ? "inline-block" : "none";
-  $("nextBtn").style.display = "none";
-  $("hint").textContent = q.type === "单选" ? "单击选项即确认判分。" : "多选题：勾选全部正确选项后确认（需完全选对才得分）。";
-}
-function pick(L, btn) {
-  if (submitted) return;
-  const q = queue[idx];
-  if (q.type === "单选") {
-    picked = new Set([L]);
-    document.querySelectorAll(".opt").forEach(o => o.classList.remove("sel"));
-    btn.classList.add("sel");
-    submit();
-  } else {
-    if (picked.has(L)) { picked.delete(L); btn.classList.remove("sel"); }
-    else { picked.add(L); btn.classList.add("sel"); }
-  }
-}
-function submit() {
-  if (submitted) return;
-  if (!picked.size) { alert("请先选择答案"); return; }
-  const q = queue[idx];
-  submitted = true;
-  const ansSet = new Set(q.ans.split(""));
-  const isRight = picked.size === ansSet.size && [...picked].every(x => ansSet.has(x));
-  stats.answered++;
-  seen.add(q.id); saveSeen();
-  if (isRight) {
-    stats.correct++;
-    stats.score += q.type === "单选" ? 2 : 3;
-    if (mode === "wrong") { wrongBook.delete(q.id); }
-  } else {
-    wrongBook.add(q.id);
-  }
-  saveWrong(); renderStats();
-  document.querySelectorAll(".opt").forEach(o => {
-    const L = o.dataset.orig;
-    o.classList.add("disabled");
-    if (ansSet.has(L)) o.classList.add("right");
-    else if (picked.has(L)) o.classList.add("wrongpick");
-  });
-  const fb = $("feedback");
-  fb.className = isRight ? "ok" : "bad";
-  fb.style.display = "block";
-  fb.innerHTML = "<div class='verdict'>" + (isRight ? "回答正确 +" + (q.type === "单选" ? 2 : 3) + " 分"
-      : "回答错误　正确答案：" + q.ans.split("").map(ch => origToDisp[ch] || ch).sort().join("") + (mode !== "wrong" ? "　（已加入错题本）" : "")) +
-    "</div><div id='exp'><b>解析：</b>" + q.exp + "　<b>考点：</b>" + q.tag + "</div>";
-  $("submitBtn").style.display = "none";
-  const next = $("nextBtn");
-  next.style.display = "inline-block";
-  next.textContent = idx + 1 >= queue.length ? "查看成绩" : "下一题";
-}
-function summary() {
-  $("quiz").style.display = "none";
-  const s = $("summary");
-  s.style.display = "block";
-  const rate = stats.answered ? Math.round(stats.correct / stats.answered * 100) : 0;
-  s.innerHTML = "<h2>本轮成绩</h2><div class='nums'>" +
-    "共 " + queue.length + " 题　|　已答 " + stats.answered + " 题　|　答对 " + stats.correct + " 题<br>" +
-    "正确率 " + rate + "%　|　模拟得分 " + stats.score + " 分<br>" +
-    "错题本现有 " + wrongBook.size + " 题</div>" +
-    "<button onclick='start()'>再刷一遍（同筛选）</button>" +
-    "<button class='red' onclick='startWrong()'>重刷错题本</button>";
-}
-function startWrong() { $("mode").value = "wrong"; start(); }
-$("submitBtn").onclick = submit;
-$("nextBtn").onclick = () => { idx++; if (idx >= queue.length) summary(); else render(); };
-$("startBtn").onclick = start;
-$("clearWrong").onclick = () => {
-  if (wrongBook.size && confirm("确定清空全部错题记录？")) { wrongBook.clear(); saveWrong(); }
-};
-$("clearSeen").onclick = () => {
-  if (seen.size && confirm("确定清空刷题记录？之后随机模式将重新优先推送所有题目。")) { seen.clear(); saveSeen(); }
-};
-function effectiveTheme() {
-  return document.documentElement.dataset.theme ||
-    (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
-}
-function updateThemeBtn() {
-  $("themeBtn").textContent = effectiveTheme() === "dark" ? "☀ 浅色" : "☾ 深色";
-}
-$("themeBtn").onclick = () => {
-  const system = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-  const next = effectiveTheme() === "dark" ? "light" : "dark";
-  document.documentElement.dataset.theme = next;
-  if (next === system) { localStorage.removeItem("theme"); delete document.documentElement.dataset.theme; }
-  else { localStorage.setItem("theme", next); }
-  updateThemeBtn();
-};
-window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", updateThemeBtn);
-(async function init() {
-  const controls = ["bank", "mode", "domain", "qtype", "diff", "startBtn", "clearSeen", "clearWrong"];
-  controls.forEach(id => $(id).disabled = true);
-  $("summary").style.display = "block";
-  $("summary").innerHTML = "<h2>题库加载中…</h2>";
-  try {
-    await loadBanks();
-  } catch (e) {
-    $("summary").innerHTML = "<h2>题库加载失败</h2><div class='nums'>" + e.message +
-      "<br>直接双击打开（file://）会被浏览器拦截，无法读取本地 CSV。" +
-      "<br>请在「硬件安全刷题」目录运行 <b>python3 -m http.server 8000</b>" +
-      "<br>然后访问 <b>http://localhost:8000/quiz/</b></div>";
-    updateThemeBtn();
-    return;
-  }
-  const selector = $("bank");
-  Object.keys(BANKS).forEach(name => {
-    const option = document.createElement("option");
-    option.value = name; option.textContent = name; selector.appendChild(option);
-  });
-  selector.value = bankKey;
-  selector.onchange = selectBank;
-  QUESTIONS = BANKS[bankKey].questions;
-  refreshFilters();
-  wrongBook = new Set(JSON.parse(localStorage.getItem(storageKey("wrong")) || "[]"));
-  seen = new Set(JSON.parse(localStorage.getItem(storageKey("seen")) || "[]"));
-  controls.forEach(id => $(id).disabled = false);
-  saveWrong(); saveSeen(); start(); updateThemeBtn();
-})();
+const BANK_SOURCES=[{name:"硬件安全题库2",file:"../硬件安全题库2.csv"},{name:"硬件安全题库",file:"../硬件安全题库.csv"}],BANKS={},$=id=>document.getElementById(id);
+function parseCSV(text){if(text.charCodeAt(0)===0xFEFF)text=text.slice(1);const rows=[];let row=[],field="",inQuotes=false;const endRow=()=>{row.push(field);field="";if(row.length>1||row[0]!=="")rows.push(row);row=[]};for(let i=0;i<text.length;i++){const c=text[i];if(inQuotes){if(c==='"'){if(text[i+1]==='"'){field+='"';i++}else inQuotes=false}else field+=c}else if(c==='"')inQuotes=true;else if(c===","){row.push(field);field=""}else if(c==="\r"){if(text[i+1]==="\n")i++;endRow()}else if(c==="\n")endRow();else field+=c}if(field!==""||row.length>0)endRow();return rows}
+function csvToQuestions(text){const rows=parseCSV(text),col={};rows[0].forEach((name,i)=>{if(!(name in col))col[name]=i});const get=(row,name)=>col[name]!=null&&row[col[name]]!=null?row[col[name]]:"";return rows.slice(1).map(row=>({id:get(row,"题号"),type:get(row,"题型"),domain:get(row,"知识域"),diff:get(row,"难度"),stem:get(row,"题干"),opts:"ABCDEFG".split("").map(L=>get(row,"选项"+L)),ans:get(row,"答案"),exp:get(row,"解析"),tag:get(row,"考点")})).filter(q=>q.id&&q.stem)}
+async function loadBanks(){for(const src of BANK_SOURCES){const res=await fetch(src.file,{cache:"no-cache"});if(!res.ok)throw new Error("加载 "+src.file+" 失败（HTTP "+res.status+"）");const questions=csvToQuestions(await res.text());if(!questions.length)throw new Error("题库 "+src.name+" 未解析到题目");BANKS[src.name]={questions}}}
+const defaultPrefs={bank:BANK_SOURCES[0].name,mode:"rand",domain:"",qtype:"",diff:"",shuffleOptions:true,singleInstant:false,autoNext:false,theme:"system"};let prefs={...defaultPrefs},bankKey=defaultPrefs.bank,QUESTIONS=[],wrongBook=new Set,seen=new Set,queue=[],idx=0,picked=new Set,submitted=false,stats={answered:0,correct:0,score:0},autoNextTimer=null;
+function parseStoredJSON(key,fallback){try{return JSON.parse(localStorage.getItem(key)||JSON.stringify(fallback))}catch(e){return fallback}}function storageKey(kind,bank=bankKey){return"hwsec_"+kind+"_v2_"+bank}function saveWrong(){localStorage.setItem(storageKey("wrong"),JSON.stringify([...wrongBook]));updateRecordCounts()}function saveSeen(){localStorage.setItem(storageKey("seen"),JSON.stringify([...seen]));updateRecordCounts()}function loadRecords(){wrongBook=new Set(parseStoredJSON(storageKey("wrong"),[]));seen=new Set(parseStoredJSON(storageKey("seen"),[]));updateRecordCounts()}function updateRecordCounts(){$("headerWrong").textContent=wrongBook.size;$("settingsSeen").textContent=seen.size;$("settingsWrong").textContent=wrongBook.size}function savePrefs(){localStorage.setItem("hwsec_prefs_v3",JSON.stringify(prefs))}function loadPrefs(){prefs={...defaultPrefs,...parseStoredJSON("hwsec_prefs_v3",{})};if(!BANKS[prefs.bank])prefs.bank=defaultPrefs.bank;if(!["rand","seq","wrong"].includes(prefs.mode))prefs.mode="rand";if(!["system","light","dark"].includes(prefs.theme))prefs.theme=localStorage.getItem("theme")||"system"}
+function applyTheme(choice){if(choice==="system"){delete document.documentElement.dataset.theme;localStorage.removeItem("theme")}else{document.documentElement.dataset.theme=choice;localStorage.setItem("theme",choice)}const dark=choice==="dark"||(choice==="system"&&matchMedia("(prefers-color-scheme: dark)").matches);$("themeColor").content=dark?"#1d2026":"#ffffff"}
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}function buildPool(){let pool=QUESTIONS.filter(q=>(!prefs.domain||q.domain===prefs.domain)&&(!prefs.qtype||q.type===prefs.qtype)&&(!prefs.diff||q.diff===prefs.diff));if(prefs.mode==="wrong")pool=pool.filter(q=>wrongBook.has(q.id));if(prefs.mode==="rand"){shuffle(pool);pool=pool.filter(q=>!seen.has(q.id)).concat(pool.filter(q=>seen.has(q.id)))}return pool}
+function modeText(){const mode={rand:"随机",seq:"顺序",wrong:"错题"}[prefs.mode],scope=[prefs.domain,prefs.qtype,prefs.diff].filter(Boolean).join(" · ")||"全部题目";return mode+" · "+scope}function renderHeader(done=false){$("modeSummary").textContent=modeText();const total=queue.length;$("headerProgress").textContent=done?"本轮完成":total?"第 "+(idx+1)+" / "+total+" 题":"暂无题目";$("headerRate").textContent=stats.answered?Math.round(stats.correct/stats.answered*100)+"%":"–";$("headerWrong").textContent=wrongBook.size;$("progressFill").style.width=(done?100:total?stats.answered/total*100:0)+"%"}
+function start(options={}){clearTimeout(autoNextTimer);bankKey=prefs.bank;QUESTIONS=BANKS[bankKey].questions;loadRecords();queue=buildPool();idx=0;stats={answered:0,correct:0,score:0};$("summary").style.display="none";if(!queue.length){$("quiz").style.display="none";const s=$("summary");s.style.display="block";s.replaceChildren();const title=document.createElement("h2");title.textContent="没有符合条件的题目";const copy=document.createElement("div");copy.className="nums";copy.textContent=prefs.mode==="wrong"?"错题本是空的，先去刷题吧。":"请在设置中调整刷题范围。";const actions=document.createElement("div");actions.className="summary-actions";const button=document.createElement("button");button.textContent="调整设置";button.onclick=openSettings;actions.appendChild(button);s.append(title,copy,actions);renderHeader()}else{$("quiz").style.display="block";render()}if(options.scroll!==false)window.scrollTo({top:0,behavior:"smooth"})}
+function render(){clearTimeout(autoNextTimer);const q=queue[idx];picked=new Set;submitted=false;$("questionCard").classList.remove("submitted");$("pos").textContent="第 "+(idx+1)+" / "+queue.length+" 题";$("typeBadge").textContent=q.type;$("badges").replaceChildren();[q.domain,q.diff].filter(Boolean).forEach((value,i)=>{const badge=document.createElement("span");badge.className="badge"+(i===1?" diff-"+value:"");badge.textContent=value;$("badges").appendChild(badge)});$("stem").textContent=q.stem;const items=q.opts.map((opt,i)=>({opt,orig:String.fromCharCode(65+i)})).filter(item=>item.opt);if(prefs.shuffleOptions)shuffle(items);const box=$("opts");box.replaceChildren();items.forEach((item,displayIndex)=>{const button=document.createElement("button");button.type="button";button.className="opt "+(q.type==="单选"?"single":"multiple");button.dataset.orig=item.orig;button.dataset.index=displayIndex;const marker=document.createElement("span");marker.className="choice-mark";const copy=document.createElement("span");copy.className="option-copy";const letter=document.createElement("span");letter.className="letter";letter.textContent=item.orig+".";copy.append(letter,document.createTextNode(item.opt));button.append(marker,copy);button.onclick=()=>pick(item.orig,button);box.appendChild(button)});$("feedback").style.display="none";$("feedback").replaceChildren();$("submitBtn").style.display="inline-block";$("submitBtn").disabled=true;$("nextBtn").style.display="none";renderHeader()}
+function pick(letter,button){if(submitted)return;const q=queue[idx];if(q.type==="单选"){picked=new Set([letter]);document.querySelectorAll(".opt").forEach(o=>o.classList.remove("sel"));button.classList.add("sel");$("submitBtn").disabled=false;if(prefs.singleInstant)submit()}else{if(picked.has(letter)){picked.delete(letter);button.classList.remove("sel")}else{picked.add(letter);button.classList.add("sel")}$("submitBtn").disabled=picked.size===0}}
+function submit(){if(submitted||!picked.size)return;const q=queue[idx],ansSet=new Set(q.ans.split("")),isRight=picked.size===ansSet.size&&[...picked].every(x=>ansSet.has(x)),wasWrong=wrongBook.has(q.id);submitted=true;stats.answered++;seen.add(q.id);if(isRight){stats.correct++;stats.score+=q.type==="单选"?2:3;wrongBook.delete(q.id)}else wrongBook.add(q.id);saveSeen();saveWrong();$("questionCard").classList.add("submitted");document.querySelectorAll(".opt").forEach(option=>{const letter=option.dataset.orig;option.classList.add("disabled");option.disabled=true;if(ansSet.has(letter))option.classList.add("right");else if(picked.has(letter))option.classList.add("wrongpick")});renderFeedback(q,isRight,wasWrong);$("submitBtn").style.display="none";const next=$("nextBtn");next.style.display="inline-block";next.textContent=idx+1>=queue.length?"查看成绩":"下一题";renderHeader();if(isRight&&prefs.autoNext&&idx+1<queue.length)autoNextTimer=setTimeout(nextQuestion,850)}
+function renderFeedback(q,isRight,wasWrong){const feedback=$("feedback");feedback.replaceChildren();feedback.style.display="block";const result=document.createElement("div");result.className="result-box "+(isRight?"ok":"bad");const verdict=document.createElement("div");verdict.className="verdict";verdict.textContent=isRight?"回答正确":"回答错误";const answer=document.createElement("div");answer.className="answer-line";answer.textContent=isRight?(wasWrong?"正确答案："+q.ans+" · 已从错题本移除":"正确答案："+q.ans):"正确答案："+q.ans+(wasWrong?" · 仍保留在错题本":" · 已加入错题本");result.append(verdict,answer);const explanation=document.createElement("section");explanation.className="explanation";const heading=document.createElement("h2");heading.textContent="解析";const paragraph=document.createElement("p");paragraph.textContent=q.exp||"暂无解析。";explanation.append(heading,paragraph);feedback.append(result,explanation);if(q.tag){const knowledge=document.createElement("div");knowledge.className="knowledge";const label=document.createElement("strong");label.textContent="考点";const value=document.createElement("span");value.textContent=q.tag;knowledge.append(label,value);feedback.appendChild(knowledge)}}
+function nextQuestion(){clearTimeout(autoNextTimer);idx++;if(idx>=queue.length)summary();else{render();requestAnimationFrame(()=>$("questionCard").scrollIntoView({behavior:"smooth",block:"start"}))}}
+function summary(){$("quiz").style.display="none";const s=$("summary");s.style.display="block";s.replaceChildren();const rate=stats.answered?Math.round(stats.correct/stats.answered*100):0,title=document.createElement("h2");title.textContent="本轮完成";const nums=document.createElement("div");nums.className="nums";nums.innerHTML="已答 "+stats.answered+" 题 · 答对 "+stats.correct+" 题<br>正确率 "+rate+"% · 模拟得分 "+stats.score+" 分<br>错题本现有 "+wrongBook.size+" 题";const actions=document.createElement("div");actions.className="summary-actions";const again=document.createElement("button");again.textContent="按当前设置再刷一轮";again.onclick=start;const wrong=document.createElement("button");wrong.className="red";wrong.textContent="重刷错题本";wrong.onclick=()=>{prefs.mode="wrong";savePrefs();start()};actions.append(again,wrong);s.append(title,nums,actions);renderHeader(true);window.scrollTo({top:0,behavior:"smooth"})}
+function refreshDomainSelect(bank,selected=""){const questions=BANKS[bank]?BANKS[bank].questions:[],domains=[...new Set(questions.map(q=>q.domain).filter(Boolean))].sort();$("domain").replaceChildren();const all=document.createElement("option");all.value="";all.textContent="全部知识域";$("domain").appendChild(all);domains.forEach(domain=>{const option=document.createElement("option");option.value=domain;option.textContent=domain;$("domain").appendChild(option)});$("domain").value=domains.includes(selected)?selected:""}
+function setSettingsFields(){$("bank").value=prefs.bank;$("mode").value=prefs.mode;refreshDomainSelect(prefs.bank,prefs.domain);$("qtype").value=prefs.qtype;$("diff").value=prefs.diff;$("shuffleOptions").checked=prefs.shuffleOptions;$("singleInstant").checked=prefs.singleInstant;$("autoNext").checked=prefs.autoNext;$("themeChoice").value=prefs.theme;updateSettingsRecordCounts()}function updateSettingsRecordCounts(){const selectedBank=$("bank").value||bankKey;$("settingsSeen").textContent=new Set(parseStoredJSON(storageKey("seen",selectedBank),[])).size;$("settingsWrong").textContent=new Set(parseStoredJSON(storageKey("wrong",selectedBank),[])).size}function openSettings(){setSettingsFields();$("settingsModal").classList.add("open");$("settingsModal").setAttribute("aria-hidden","false");document.body.classList.add("modal-open");$("closeSettings").focus()}function closeSettings(){$("settingsModal").classList.remove("open");$("settingsModal").setAttribute("aria-hidden","true");document.body.classList.remove("modal-open");$("settingsBtn").focus()}function applySettings(){prefs={bank:$("bank").value,mode:$("mode").value,domain:$("domain").value,qtype:$("qtype").value,diff:$("diff").value,shuffleOptions:$("shuffleOptions").checked,singleInstant:$("singleInstant").checked,autoNext:$("autoNext").checked,theme:$("themeChoice").value};savePrefs();applyTheme(prefs.theme);closeSettings();start()}
+function clearSelectedRecord(kind){const selectedBank=$("bank").value,values=new Set(parseStoredJSON(storageKey(kind,selectedBank),[]));if(!values.size)return;const label=kind==="seen"?"刷题记录":"错题本";if(!confirm("确定清空“"+selectedBank+"”的全部"+label+"？"))return;localStorage.setItem(storageKey(kind,selectedBank),"[]");if(selectedBank===bankKey){if(kind==="seen")seen.clear();else wrongBook.clear();updateRecordCounts();renderHeader(idx>=queue.length&&queue.length>0)}updateSettingsRecordCounts()}
+$("submitBtn").onclick=submit;$("nextBtn").onclick=nextQuestion;$("settingsBtn").onclick=openSettings;$("closeSettings").onclick=closeSettings;$("cancelSettings").onclick=closeSettings;$("settingsBackdrop").onclick=closeSettings;$("applySettings").onclick=applySettings;$("bank").onchange=()=>{refreshDomainSelect($("bank").value);updateSettingsRecordCounts()};$("clearSeen").onclick=()=>clearSelectedRecord("seen");$("clearWrong").onclick=()=>clearSelectedRecord("wrong");document.addEventListener("keydown",event=>{if($("settingsModal").classList.contains("open")){if(event.key==="Escape")closeSettings();return}if(["INPUT","SELECT","TEXTAREA"].includes(document.activeElement.tagName)||!$("quiz").offsetParent)return;if(/^[1-7]$/.test(event.key)&&!submitted){const option=document.querySelectorAll(".opt")[Number(event.key)-1];if(option){event.preventDefault();option.click()}}else if(event.key==="Enter"){event.preventDefault();if(submitted)nextQuestion();else if(picked.size)submit()}});matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>{if(prefs.theme==="system")applyTheme("system")});
+(async function init(){$("settingsBtn").disabled=true;$("summary").style.display="block";$("summary").innerHTML="<h2>题库加载中…</h2>";try{await loadBanks()}catch(error){$("summary").innerHTML="<h2>题库加载失败</h2><div class='nums'>"+error.message+"<br>直接双击打开会被浏览器拦截，无法读取本地 CSV。<br>请在“硬件安全刷题”目录启动本地 Web 服务后访问 quiz/。</div>";return}Object.keys(BANKS).forEach(name=>{const option=document.createElement("option");option.value=name;option.textContent=name;$("bank").appendChild(option)});loadPrefs();applyTheme(prefs.theme);$("settingsBtn").disabled=false;start({scroll:false})})();
 </script>
 </body>
 </html>
