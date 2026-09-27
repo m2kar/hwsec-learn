@@ -1,0 +1,236 @@
+[
+ {
+  "qid": "Z068",
+  "truth": "CEF",
+  "pred": "CEF",
+  "correct": true
+ },
+ {
+  "qid": "Z086",
+  "truth": "BCF",
+  "pred": "BCF",
+  "correct": true
+ },
+ {
+  "qid": "Z088",
+  "truth": "A",
+  "pred": "A",
+  "correct": true
+ },
+ {
+  "qid": "Z091",
+  "truth": "B",
+  "pred": "B",
+  "correct": true
+ },
+ {
+  "qid": "Z102",
+  "truth": "ADF",
+  "pred": "ADF",
+  "correct": true
+ },
+ {
+  "qid": "Z107",
+  "truth": "C",
+  "pred": "C",
+  "correct": true
+ },
+ {
+  "qid": "Z115",
+  "truth": "ACE",
+  "pred": "ACE",
+  "correct": true
+ },
+ {
+  "qid": "Z127",
+  "truth": "ABC",
+  "pred": "ABC",
+  "correct": true
+ },
+ {
+  "qid": "Z150",
+  "truth": "BCDF",
+  "pred": "BCDF",
+  "correct": true
+ },
+ {
+  "qid": "Z154",
+  "truth": "C",
+  "pred": "C",
+  "correct": true
+ },
+ {
+  "qid": "Z158",
+  "truth": "ABCD",
+  "pred": "ABCD",
+  "correct": true
+ },
+ {
+  "qid": "Z163",
+  "truth": "CDF",
+  "pred": "CDF",
+  "correct": true
+ },
+ {
+  "qid": "Z165",
+  "truth": "CDF",
+  "pred": "CDF",
+  "correct": true
+ },
+ {
+  "qid": "Z167",
+  "truth": "CDEF",
+  "pred": "CDEF",
+  "correct": true
+ },
+ {
+  "qid": "Z169",
+  "truth": "A",
+  "pred": "A",
+  "correct": true
+ },
+ {
+  "qid": "Z179",
+  "truth": "BDE",
+  "pred": "BDE",
+  "correct": true
+ },
+ {
+  "qid": "Z185",
+  "truth": "A",
+  "pred": "A",
+  "correct": true
+ },
+ {
+  "qid": "Z186",
+  "truth": "ADF",
+  "pred": "ADF",
+  "correct": true
+ },
+ {
+  "qid": "Z187",
+  "truth": "C",
+  "pred": "C",
+  "correct": true
+ },
+ {
+  "qid": "Z192",
+  "truth": "BCDF",
+  "pred": "BCDF",
+  "correct": true
+ },
+ {
+  "qid": "Z193",
+  "truth": "C",
+  "pred": "C",
+  "correct": true
+ },
+ {
+  "qid": "Y027",
+  "truth": "ADE",
+  "pred": "ADE",
+  "correct": true
+ },
+ {
+  "qid": "Y043",
+  "truth": "ACF",
+  "pred": "ACF",
+  "correct": true
+ },
+ {
+  "qid": "Y045",
+  "truth": "CDE",
+  "pred": "CDE",
+  "correct": true
+ },
+ {
+  "qid": "Y055",
+  "truth": "ADF",
+  "pred": "ADF",
+  "correct": true
+ },
+ {
+  "qid": "Y057",
+  "truth": "ABCEF",
+  "pred": "ABCEF",
+  "correct": true
+ },
+ {
+  "qid": "Y102",
+  "truth": "ABC",
+  "pred": "ABC",
+  "correct": true
+ },
+ {
+  "qid": "Y107",
+  "truth": "A",
+  "pred": "A",
+  "correct": true
+ },
+ {
+  "qid": "Y116",
+  "truth": "ABCF",
+  "pred": "ABCF",
+  "correct": true
+ },
+ {
+  "qid": "Y122",
+  "truth": "BCD",
+  "pred": "BCD",
+  "correct": true
+ },
+ {
+  "qid": "Y128",
+  "truth": "BCE",
+  "pred": "BCE",
+  "correct": true
+ },
+ {
+  "qid": "Y131",
+  "truth": "AEF",
+  "pred": "AEF",
+  "correct": true
+ },
+ {
+  "qid": "Y138",
+  "truth": "CEF",
+  "pred": "CEF",
+  "correct": true
+ },
+ {
+  "qid": "Y143",
+  "truth": "ACDF",
+  "pred": "ACDF",
+  "correct": true
+ },
+ {
+  "qid": "Y146",
+  "truth": "BCDE",
+  "pred": "BDE",
+  "correct": false
+ },
+ {
+  "qid": "Y155",
+  "truth": "ACE",
+  "pred": "ACE",
+  "correct": true
+ },
+ {
+  "qid": "Y156",
+  "truth": "E",
+  "pred": "E",
+  "correct": true
+ },
+ {
+  "qid": "Y214",
+  "truth": "BCEF",
+  "pred": "BCEF",
+  "correct": true
+ },
+ {
+  "qid": "Y279",
+  "truth": "C",
+  "pred": "C",
+  "correct": true
+ }
+]
