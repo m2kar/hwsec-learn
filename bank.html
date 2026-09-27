@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>题库浏览 · 硬件安全学习中心</title>
+<script>(function(){var t=null;try{t=localStorage.getItem("theme")}catch(e){}if(!t)t=window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";document.documentElement.dataset.theme=t;})();</script>
+<style>
+:root { --accent:#C7000B; --accentT:#C7000B; --blue:#1F4E79; --bg:#f7f5f2; --card:#fff; --text:#222; --muted:#666; --line:#e3e0dc; --soft:#f1efec; --okbg:#edf8f0; --oktext:#1e6b43; --badbg:#fdf0ef; --badtext:#b3271f; --warnbg:#fff3e0; --warntext:#9a5900; color-scheme:light; }
+:root[data-theme="dark"] { --accent:#e5483d; --accentT:#ff6b60; --blue:#8ab8e8; --bg:#14161a; --card:#1d2026; --text:#d6d3cd; --muted:#9a968f; --line:#34383f; --soft:#292c32; --okbg:#1d3226; --oktext:#6fce9c; --badbg:#3a2020; --badtext:#ff8d84; --warnbg:#382c16; --warntext:#e0ab53; color-scheme:dark; }
+* { box-sizing:border-box; }
+body { margin:0; font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif; background:var(--bg); color:var(--text); }
+#themeBtn { position:fixed; top:12px; right:14px; z-index:9; font-size:12px; padding:5px 12px; border:1px solid var(--line); border-radius:14px; background:var(--card); color:var(--text); cursor:pointer; }
+header { background:var(--card); border-bottom:3px solid var(--accent); padding:34px 20px 26px; text-align:center; }
+.crumb { margin:0 0 10px; font-size:13px; }
+.crumb a { color:var(--muted); text-decoration:none; }
+.crumb a:hover { color:var(--accentT); }
+h1 { margin:0 0 10px; font-size:26px; color:var(--accentT); }
+.sub { color:var(--muted); font-size:14px; max-width:780px; margin:0 auto; line-height:1.8; }
+.sub a { color:var(--blue); }
+main { max-width:1100px; margin:24px auto 40px; padding:0 16px; }
+.card { background:var(--card); border:1px solid var(--line); border-radius:12px; }
+.toolbar { padding:14px 16px; display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
+.toolbar select, .toolbar input { min-height:38px; padding:6px 10px; border:1px solid var(--line); border-radius:8px; background:var(--card); color:var(--text); font:inherit; font-size:13px; max-width:100%; }
+.toolbar button { min-height:38px; padding:6px 12px; border:1px solid var(--line); border-radius:8px; background:var(--card); color:var(--text); font:inherit; font-size:13px; cursor:pointer; }
+.toolbar button:hover { border-color:var(--accent); color:var(--accentT); }
+.toolbar .search { flex:1 1 200px; min-width:170px; }
+.toolbar .links { flex-basis:100%; font-size:13px; color:var(--muted); }
+.toolbar .links a { color:var(--blue); text-decoration:none; }
+.toolbar .links a:hover { color:var(--accentT); }
+#statLine { margin:14px 4px; font-size:13px; color:var(--muted); line-height:1.8; }
+#statLine b { color:var(--text); font-variant-numeric:tabular-nums; }
+.tablewrap { overflow-x:auto; }
+table { border-collapse:collapse; width:100%; min-width:980px; font-size:14px; }
+thead th { position:sticky; top:0; z-index:2; background:var(--soft); color:var(--muted); font-weight:600; text-align:left; padding:10px; border-bottom:1px solid var(--line); white-space:nowrap; }
+tbody td { padding:10px; border-bottom:1px solid var(--line); vertical-align:top; line-height:1.65; overflow-wrap:anywhere; }
+tbody tr.q { cursor:pointer; }
+tbody tr.q:hover, tbody tr.q.open { background:var(--soft); }
+tbody tr.wrong td.id { box-shadow:inset 3px 0 0 var(--accent); }
+td.id, td.type, td.diff { white-space:nowrap; }
+td.ans { font-weight:650; color:var(--oktext); letter-spacing:2px; white-space:nowrap; }
+.clamp2, .clamp3 { display:-webkit-box; -webkit-box-orient:vertical; overflow:hidden; }
+.clamp2 { -webkit-line-clamp:2; } .clamp3 { -webkit-line-clamp:3; }
+.tag { display:inline-block; padding:1px 8px; border-radius:10px; background:var(--soft); color:var(--muted); font-size:12px; white-space:nowrap; }
+.tag.type { color:var(--accentT); font-weight:600; }
+.tag.diff-核心, .tag.diff-挑战, .tag.diff-进阶 { background:var(--warnbg); color:var(--warntext); }
+.mark { display:inline-block; min-width:46px; text-align:center; padding:2px 8px; border-radius:10px; font-size:12px; white-space:nowrap; }
+.mark.ok { background:var(--okbg); color:var(--oktext); }
+.mark.no { background:var(--soft); color:var(--muted); }
+.mark.bad { background:var(--badbg); color:var(--badtext); font-weight:600; }
+tbody tr.detail td { background:var(--card); border-bottom:1px solid var(--line); }
+.detail-block { margin:0 0 14px; }
+.detail-block:last-child { margin-bottom:2px; }
+.detail-block h3 { margin:0 0 6px; font-size:13px; color:var(--muted); font-weight:600; }
+.detail-block p { margin:0; line-height:1.8; white-space:pre-wrap; }
+.optline { margin:3px 0; line-height:1.7; }
+.optline .letter { display:inline-block; min-width:22px; color:var(--blue); font-weight:700; }
+.optline.right { color:var(--oktext); font-weight:600; }
+tbody tr.empty td { padding:34px 10px; text-align:center; color:var(--muted); }
+.pager { display:flex; flex-wrap:wrap; gap:6px; justify-content:center; align-items:center; margin-top:16px; }
+.pager button { min-width:36px; min-height:34px; padding:5px 10px; border:1px solid var(--line); border-radius:8px; background:var(--card); color:var(--text); font:inherit; font-size:13px; cursor:pointer; }
+.pager button:hover:not(:disabled) { border-color:var(--accent); color:var(--accentT); }
+.pager button.cur { border-color:var(--accent); color:var(--accentT); font-weight:700; }
+.pager button:disabled { opacity:.4; cursor:default; }
+.pager .ellipsis { padding:0 4px; color:var(--muted); }
+#errorCard { padding:26px 22px; display:none; }
+#errorCard h2 { margin:0 0 10px; font-size:18px; color:var(--accentT); }
+#errorCard p { margin:0; color:var(--muted); font-size:14px; line-height:1.9; }
+footer { text-align:center; color:var(--muted); font-size:12px; padding:24px; }
+@media(max-width:600px){ h1{font-size:22px} .toolbar{gap:8px} .toolbar select{flex:1 1 30%} }
+</style>
+</head>
+<body>
+<button id="themeBtn" onclick="toggleTheme()" title="切换深色 / 浅色（默认跟随系统）">☾ 深色</button>
+<header>
+  <p class="crumb"><a href="index.html">← 返回学习中心</a></p>
+  <h1>题库浏览</h1>
+  <p class="sub">以表格在线浏览完整题库：题号 / 题型 / 知识域 / 难度 / 题干 / 选项 / 答案 / 解析 / 考点，并显示每题的答题记录与错题记录（与<a href="quiz/">刷题应用</a>共享本地数据）。每题默认展开完整题干、选项与解析，点击题目行可收起 / 展开。</p>
+</header>
+<main>
+  <section class="card toolbar" id="toolbar" hidden>
+    <select id="bank" aria-label="题库"></select>
+    <select id="domain" aria-label="知识域"><option value="">全部知识域</option></select>
+    <select id="qtype" aria-label="题型"><option value="">全部题型</option><option>单选</option><option>多选</option></select>
+    <select id="diff" aria-label="难度"><option value="">全部难度</option></select>
+    <select id="status" aria-label="答题状态"><option value="">全部状态</option><option value="done">已答</option><option value="todo">未答</option><option value="wrong">仅看错题</option></select>
+    <input id="search" class="search" type="search" placeholder="搜索题号 / 题干 / 选项 / 答案 / 解析 / 考点…">
+    <button id="detailToggle" type="button">收起全部详情</button>
+    <span class="links">CSV 下载：<a href="硬件安全题库2.csv">硬件安全题库2</a> · <a href="硬件安全题库.csv">硬件安全题库</a> ｜ <a href="quiz/">去刷题</a></span>
+  </section>
+  <p id="statLine">题库加载中…</p>
+  <section class="card tablewrap" id="tableCard" hidden>
+    <table>
+      <thead><tr>
+        <th>题号</th><th>题型</th><th>知识域</th><th>难度</th><th>题干</th><th>答案</th><th>考点</th><th>答题记录</th><th>错题记录</th>
+      </tr></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </section>
+  <nav class="pager" id="pager" aria-label="分页"></nav>
+  <section class="card" id="errorCard"></section>
+</main>
+<footer>内容仅供学习交流使用</footer>
+<script>
+const BANK_SOURCES=[{name:"硬件安全题库2",file:"硬件安全题库2.csv"},{name:"硬件安全题库",file:"硬件安全题库.csv"}],PAGE_SIZE=50,$=id=>document.getElementById(id);
+const BANKS={};
+let bankKey="",filters={domain:"",qtype:"",diff:"",status:"",q:""},page=1,records={seen:new Set(),wrong:new Set()},searchTimer=null,detailsOpen=true;
+function parseCSV(text){if(text.charCodeAt(0)===0xFEFF)text=text.slice(1);const rows=[];let row=[],field="",inQuotes=false;const endRow=()=>{row.push(field);field="";if(row.length>1||row[0]!=="")rows.push(row);row=[]};for(let i=0;i<text.length;i++){const c=text[i];if(inQuotes){if(c==='"'){if(text[i+1]==='"'){field+='"';i++}else inQuotes=false}else field+=c}else if(c==='"')inQuotes=true;else if(c===","){row.push(field);field=""}else if(c==="\r"){if(text[i+1]==="\n")i++;endRow()}else if(c==="\n")endRow();else field+=c}if(field!==""||row.length>0)endRow();return rows}
+function csvToQuestions(text){const rows=parseCSV(text),col={};rows[0].forEach((name,i)=>{if(!(name in col))col[name]=i});const get=(row,name)=>col[name]!=null&&row[col[name]]!=null?row[col[name]]:"";return rows.slice(1).map(row=>({id:get(row,"题号"),type:get(row,"题型"),domain:get(row,"知识域"),diff:get(row,"难度"),stem:get(row,"题干"),opts:"ABCDEFG".split("").map(L=>get(row,"选项"+L)),ans:get(row,"答案"),exp:get(row,"解析"),tag:get(row,"考点")})).filter(q=>q.id&&q.stem)}
+async function loadBanks(){for(const src of BANK_SOURCES){const res=await fetch(src.file,{cache:"no-cache"});if(!res.ok)throw new Error("加载 "+src.file+" 失败（HTTP "+res.status+"）");const questions=csvToQuestions(await res.text());if(!questions.length)throw new Error("题库 "+src.name+" 未解析到题目");BANKS[src.name]={questions}}}
+function parseStoredJSON(key,fallback){try{return JSON.parse(localStorage.getItem(key)||JSON.stringify(fallback))}catch(e){return fallback}}
+function storageKey(kind,bank){return "hwsec_"+kind+"_v2_"+bank}
+function loadRecords(){records.seen=new Set(parseStoredJSON(storageKey("seen",bankKey),[]));records.wrong=new Set(parseStoredJSON(storageKey("wrong",bankKey),[]))}
+function refreshDynamicSelect(id,values){const select=$(id),keep=select.value;select.replaceChildren(select.options[0]);values.forEach(v=>{const o=document.createElement("option");o.value=v;o.textContent=v;select.appendChild(o)});select.value=values.includes(keep)?keep:"";filters[id]=select.value}
+function syncDynamicSelects(){const qs=BANKS[bankKey].questions;refreshDynamicSelect("domain",[...new Set(qs.map(q=>q.domain).filter(Boolean))].sort());refreshDynamicSelect("diff",[...new Set(qs.map(q=>q.diff).filter(Boolean))].sort())}
+function filtered(){const kw=filters.q.trim().toLowerCase();return BANKS[bankKey].questions.filter(q=>{if(filters.domain&&q.domain!==filters.domain)return false;if(filters.qtype&&q.type!==filters.qtype)return false;if(filters.diff&&q.diff!==filters.diff)return false;const answered=records.seen.has(q.id),wrong=records.wrong.has(q.id);if(filters.status==="done"&&!answered)return false;if(filters.status==="todo"&&answered)return false;if(filters.status==="wrong"&&!wrong)return false;if(kw&&!(q.id+" "+q.stem+" "+q.opts.join(" ")+" "+q.ans+" "+q.exp+" "+q.tag).toLowerCase().includes(kw))return false;return true})}
+function td(text,cls){const c=document.createElement("td");if(cls)c.className=cls;c.textContent=text===""?"—":text;return c}
+function clampTd(text,cls){const c=document.createElement("td");const d=document.createElement("div");d.className=cls;d.textContent=text===""?"—":text;c.append(d);return c}
+function tagTd(text,cls){const c=document.createElement("td");if(cls==="type")c.className="type";const s=document.createElement("span");s.className="tag "+cls;s.textContent=text;c.append(s);return c}
+function markTd(text,cls){const c=document.createElement("td");const s=document.createElement("span");s.className="mark "+cls;s.textContent=text;c.append(s);return c}
+function block(title,node){const b=document.createElement("div");b.className="detail-block";const h=document.createElement("h3");h.textContent=title;b.append(h,node);return b}
+function buildRow(q){const answered=records.seen.has(q.id),wrong=records.wrong.has(q.id);
+const tr=document.createElement("tr");tr.className="q"+(wrong?" wrong":"");
+tr.append(td(q.id,"id"),tagTd(q.type,"type"),td(q.domain),tagTd(q.diff,"diff-"+q.diff),clampTd(q.stem,"clamp3"),td(q.ans,"ans"),clampTd(q.tag,"clamp2"),markTd(answered?"已答":"未答",answered?"ok":"no"),markTd(wrong?"错题":"—",wrong?"bad":"no"));
+const dtr=document.createElement("tr");dtr.className="detail";dtr.style.display=detailsOpen?"":"none";
+const dc=document.createElement("td");dc.colSpan=9;
+const stemP=document.createElement("p");stemP.textContent=q.stem;dc.append(block("题干",stemP));
+const opts=q.opts.map((text,i)=>({text,letter:"ABCDEFG"[i]})).filter(o=>o.text);
+if(opts.length){const box=document.createElement("div");const ansSet=new Set(q.ans.split(""));opts.forEach(o=>{const line=document.createElement("div");line.className="optline"+(ansSet.has(o.letter)?" right":"");const l=document.createElement("span");l.className="letter";l.textContent=o.letter+".";line.append(l,document.createTextNode(o.text));box.appendChild(line)});dc.append(block("选项（绿色为正确答案）",box))}
+const expP=document.createElement("p");expP.textContent=q.exp||"暂无解析。";dc.append(block("解析",expP));
+const tagP=document.createElement("p");tagP.textContent=q.tag||"—";dc.append(block("考点",tagP));
+dtr.append(dc);
+if(detailsOpen)tr.classList.add("open");
+tr.onclick=()=>{const open=dtr.style.display!=="none";dtr.style.display=open?"none":"";tr.classList.toggle("open",!open)};
+const frag=document.createDocumentFragment();frag.append(tr,dtr);return frag}
+function pageItems(cur,pages){if(pages<=9)return Array.from({length:pages},(_,i)=>i+1);const set=new Set([1,2,cur-1,cur,cur+1,pages-1,pages].filter(p=>p>=1&&p<=pages));const out=[];let prev=0;set.forEach(p=>{if(p-prev>1)out.push("…");out.push(p);prev=p});return out}
+function renderPager(cur,pages){const nav=$("pager");nav.replaceChildren();if(pages<=1)return;
+const mk=(label,pg,disabled,isCur)=>{const b=document.createElement("button");b.type="button";b.textContent=label;if(isCur)b.className="cur";b.disabled=disabled||pg<1||pg>pages;b.onclick=()=>{page=pg;render();window.scrollTo({top:0,behavior:"smooth"})};return b};
+nav.append(mk("‹ 上一页",cur-1,cur===1,false));
+pageItems(cur,pages).forEach(it=>{if(it==="…"){const s=document.createElement("span");s.className="ellipsis";s.textContent="…";nav.append(s)}else nav.append(mk(String(it),it,false,it===cur))});
+nav.append(mk("下一页 ›",cur+1,cur===pages,false))}
+function render(){const all=BANKS[bankKey].questions,answeredAll=all.filter(q=>records.seen.has(q.id)).length,wrongAll=all.filter(q=>records.wrong.has(q.id)).length,list=filtered(),pages=Math.max(1,Math.ceil(list.length/PAGE_SIZE));page=Math.min(Math.max(1,page),pages);
+$("statLine").textContent="题库「"+bankKey+"」共 "+all.length+" 题：已答 "+answeredAll+" · 未答 "+(all.length-answeredAll)+" · 错题 "+wrongAll+"；当前筛选 "+list.length+" 题。";
+const tbody=$("tbody");tbody.replaceChildren();
+if(!list.length){const tr=document.createElement("tr");tr.className="empty";const c=td("没有符合条件的题目，请调整筛选或搜索词。");c.colSpan=9;tr.append(c);tbody.append(tr)}
+else list.slice((page-1)*PAGE_SIZE,page*PAGE_SIZE).forEach(q=>tbody.append(buildRow(q)));
+renderPager(page,pages)}
+function refresh(){loadRecords();render()}
+function effectiveTheme(){return document.documentElement.dataset.theme||(window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light")}
+function updateThemeBtn(){$("themeBtn").textContent=effectiveTheme()==="dark"?"☀ 浅色":"☾ 深色"}
+function toggleTheme(){const system=window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";const next=effectiveTheme()==="dark"?"light":"dark";document.documentElement.dataset.theme=next;if(next===system){localStorage.removeItem("theme");delete document.documentElement.dataset.theme}else{localStorage.setItem("theme",next)}updateThemeBtn()}
+window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change",updateThemeBtn);
+$("bank").onchange=e=>{bankKey=e.target.value;page=1;loadRecords();syncDynamicSelects();render()};
+["domain","qtype","diff","status"].forEach(id=>{$(id).onchange=e=>{filters[id]=e.target.value;page=1;render()}});
+$("search").oninput=e=>{clearTimeout(searchTimer);searchTimer=setTimeout(()=>{filters.q=e.target.value;page=1;render()},200)};
+$("detailToggle").onclick=()=>{detailsOpen=!detailsOpen;$("detailToggle").textContent=detailsOpen?"收起全部详情":"展开全部详情";render()};
+window.addEventListener("storage",e=>{if(!e.key||/^hwsec_(seen|wrong)_v2_/.test(e.key))refresh()});
+window.addEventListener("pageshow",e=>{if(e.persisted)refresh()});
+updateThemeBtn();
+(async function init(){
+try{await loadBanks()}catch(error){$("statLine").textContent="";const card=$("errorCard");card.style.display="block";const h=document.createElement("h2");h.textContent="题库加载失败";const p=document.createElement("p");p.textContent=error.message+"。直接双击打开会被浏览器拦截，无法读取本地 CSV；请在“硬件安全刷题”目录启动本地 Web 服务（如 python3 -m http.server）后访问本页。";card.append(h,p);return}
+BANK_SOURCES.forEach(s=>{const o=document.createElement("option");o.value=s.name;o.textContent=s.name+"（"+BANKS[s.name].questions.length+" 题）";$("bank").appendChild(o)});
+bankKey=BANK_SOURCES[0].name;$("bank").value=bankKey;
+loadRecords();syncDynamicSelects();
+$("toolbar").hidden=false;$("tableCard").hidden=false;
+render();
+})();
+</script>
+</body>
+</html>
